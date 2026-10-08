@@ -2,6 +2,7 @@ import * as http from 'http';
 import { timingSafeEqual } from 'crypto';
 import { AgentEvent } from '../models/AgentEvent';
 import { Disposable, Emitter } from '../util/emitter';
+import { HOOK_PATH, TOKEN_HEADER_NAME } from './HookInstaller';
 import { parseHookPayload } from './hookPayload';
 
 /**
@@ -56,8 +57,9 @@ export class NoopHookBridge implements HookBridge {
   }
 }
 
-export const HOOK_PATH = '/claude-city/hook';
-export const TOKEN_HEADER = 'x-claude-city-token';
+export { HOOK_PATH };
+/** Node lower-cases incoming header names. */
+export const TOKEN_HEADER = TOKEN_HEADER_NAME.toLowerCase();
 export const DEFAULT_HOOK_PORT = 47821;
 export const MAX_BODY_BYTES = 256 * 1024;
 /** Max accepted events per second (simple fixed window); excess requests get 429. */

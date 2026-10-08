@@ -265,6 +265,7 @@ export function stateDbPathFromGlobalStorage(globalStorageFsPath: string | undef
 export class ClaudeArchiveMarkerReader {
   private cache: { mtimeMs: number; size: number; marker: ArchiveMarker } | undefined;
   private readonly fs: MarkerFs;
+  private readonly maxBytes: number;
 
   constructor(
     private readonly dbPath: string | undefined,
@@ -273,8 +274,6 @@ export class ClaudeArchiveMarkerReader {
     this.fs = opts.fs ?? nodeMarkerFs;
     this.maxBytes = opts.maxBytes ?? MAX_DB_BYTES;
   }
-
-  private readonly maxBytes: number;
 
   async read(): Promise<ArchiveMarker> {
     if (!this.dbPath) return { available: false, ids: new Set(), reason: 'no state database path' };

@@ -99,7 +99,9 @@ describe('scanRoot', () => {
   it('never imports the home folder itself as one workspace (subfolders are fine)', async () => {
     touch('.claude/settings.json');
     mkdirs('src', 'Documents');
-    const r = await scanRoot(tmp, { homeDir: tmp.toUpperCase() });
+    // Windows paths compare case-insensitively; POSIX paths do not, so only vary the case there.
+    const homeDir = process.platform === 'win32' ? tmp.toUpperCase() : tmp;
+    const r = await scanRoot(tmp, { homeDir });
     expect(r.mode).toBe('children');
     expect(names(r.projects)).toEqual(['Documents', 'src']);
   });
