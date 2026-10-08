@@ -1,0 +1,263 @@
+{
+  "name": "claude-city",
+  "displayName": "Claude City",
+  "description": "A living city visualization of your local Claude Code sessions and agents.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://example.invalid/claude-city.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "claude",
+    "claude code",
+    "agents",
+    "visualization"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claudeCity",
+          "title": "Claude City",
+          "icon": "media/city.svg"
+        }
+      ]
+    },
+    "views": {
+      "claudeCity": [
+        {
+          "type": "webview",
+          "id": "claudeCity.overview",
+          "name": "Overview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "claudeCity.open",
+        "title": "Open City",
+        "category": "Claude City",
+        "icon": "$(organization)"
+      },
+      {
+        "command": "claudeCity.refresh",
+        "title": "Refresh",
+        "category": "Claude City",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeCity.toggleDemoData",
+        "title": "Toggle Demo Data",
+        "category": "Claude City",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "claudeCity.installHooks",
+        "title": "Install Live Event Hooks…",
+        "category": "Claude City",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "claudeCity.uninstallHooks",
+        "title": "Remove Live Event Hooks…",
+        "category": "Claude City",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "claudeCity.importWorkspacesFromFolder",
+        "title": "Import Workspaces from Folder…",
+        "category": "Claude City",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "claudeCity.removeWorkspaceRoot",
+        "title": "Remove Workspace Root…",
+        "category": "Claude City",
+        "icon": "$(folder-library)"
+      },
+      {
+        "command": "claudeCity.removeWorkspace",
+        "title": "Remove Workspace from City…",
+        "category": "Claude City",
+        "icon": "$(trash)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "claudeCity.refresh",
+          "when": "view == claudeCity.overview",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeCity.open",
+          "when": "view == claudeCity.overview",
+          "group": "navigation@2"
+        },
+        {
+          "command": "claudeCity.importWorkspacesFromFolder",
+          "when": "view == claudeCity.overview",
+          "group": "navigation@0"
+        },
+        {
+          "command": "claudeCity.removeWorkspaceRoot",
+          "when": "view == claudeCity.overview",
+          "group": "workspaces@1"
+        },
+        {
+          "command": "claudeCity.installHooks",
+          "when": "view == claudeCity.overview",
+          "group": "hooks@1"
+        },
+        {
+          "command": "claudeCity.uninstallHooks",
+          "when": "view == claudeCity.overview",
+          "group": "hooks@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Claude City",
+      "properties": {
+        "claudeCity.claudePath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Absolute path to the `claude` executable. Leave empty to search `PATH`.",
+          "scope": "machine"
+        },
+        "claudeCity.pollIntervalSeconds": {
+          "type": "number",
+          "default": 5,
+          "minimum": 2,
+          "maximum": 300,
+          "description": "Polling interval (seconds) for `claude agents --json --all` while a City view is visible."
+        },
+        "claudeCity.demoMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "on",
+            "off"
+          ],
+          "enumDescriptions": [
+            "Show demo data only when the Claude CLI is unavailable (clearly labelled DEMO).",
+            "Always show demo data.",
+            "Never show demo data."
+          ],
+          "default": "auto",
+          "description": "Controls when demo data is shown."
+        },
+        "claudeCity.discoverHistoricalProjects": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Best effort: register every project found under `~/.claude/projects` as a building, even if it has no session within `#claudeCity.history.maxAgeDays#`. Never required."
+        },
+        "claudeCity.workspaceRoots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "application",
+          "markdownDescription": "Folders that contain your projects. Every direct subfolder is shown as a building (hidden folders and `node_modules`, `bin`, `obj`, `out`, `dist` are skipped). Rescanned on activation, on **Refresh** and every 2 minutes: new subfolders appear automatically, vanished ones are shown as \"folder not found\". Usually filled by **Claude City: Import Workspaces from Folder…**."
+        },
+        "claudeCity.history.importSessions": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Import past Claude Code sessions from the local transcripts in `~/.claude/projects` and show recent ones as rooms and archived ones as boxes in each building's **basement**. Read-only and best effort: only the first and last 64 KB of each transcript are read (the transcript format is not a stable API). Live sessions always win over archived ones."
+        },
+        "claudeCity.history.maxAgeDays": {
+          "type": "number",
+          "default": 90,
+          "minimum": 1,
+          "markdownDescription": "Only import past sessions whose transcript changed within this many days."
+        },
+        "claudeCity.history.maxSessionsPerWorkspace": {
+          "type": "number",
+          "default": 12,
+          "minimum": 0,
+          "markdownDescription": "Archived sessions per building sent with full details (most recent first). Older ones come from a lightweight index: they are still counted on the house, drawn as boxes in the building's basement (up to 60, then \"+N\") and listed in its detail panel (up to 200 per building)."
+        },
+        "claudeCity.history.recentDays": {
+          "type": "number",
+          "default": 14,
+          "minimum": 0,
+          "markdownDescription": "Fallback only. When Claude Code's own archive marker can be read (see `#claudeCity.history.useClaudeCodeArchive#`), exactly the sessions archived in Claude Code are archived and all other past sessions are **recent** (Claude Code auto-archives after `claudeCode.archiveInactiveSessions` days itself). When the marker is off or unavailable, past sessions active within this many days are **recent** (rooms with a resting character), older ones go to the building's **basement** archive. `0` archives every session that is not running."
+        },
+        "claudeCity.history.maxRecentPerWorkspace": {
+          "type": "number",
+          "default": 20,
+          "minimum": 0,
+          "markdownDescription": "Maximum recent (resting) rooms per building (most recent first). Further recent sessions are counted and listed in the building's detail panel."
+        },
+        "claudeCity.history.useClaudeCodeArchive": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Best effort: treat sessions you archived in the Claude Code extension's session list (manually or via `claudeCode.archiveInactiveSessions`) as archived. Reads only the list of archived session ids from VS Code's global state database (read-only). When available it is the only rule (no additional age limit). This relies on undocumented Claude Code internals; when they cannot be read, `#claudeCity.history.recentDays#` decides."
+        },
+        "claudeCity.hookBridge.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Run the loopback-only (127.0.0.1) live-event server that receives Claude Code hook events. Hooks themselves are only added to Claude settings via **Claude City: Install Live Event Hooks…**."
+        },
+        "claudeCity.hookBridge.port": {
+          "type": "number",
+          "default": 47821,
+          "minimum": 1024,
+          "maximum": 65535,
+          "markdownDescription": "Fixed loopback port of the live-event server. Changing it requires re-running **Install Live Event Hooks…** (the hook URL contains the port)."
+        },
+        "claudeCity.ambient.dayNight": {
+          "type": "boolean",
+          "default": true,
+          "description": "Tint the city according to the local time of day (static tint, no animation)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile:prod",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
+    "compile": "npm run typecheck && node esbuild.mjs",
+    "compile:prod": "npm run typecheck && node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "pretest:integration": "npm run compile && tsc -p tsconfig.integration.json",
+    "test:integration": "node ./out/test/integration/runTest.js",
+    "package": "vsce package --out claude-city.vsix --baseContentUrl https://example.invalid/claude-city/blob/HEAD --baseImagesUrl https://example.invalid/claude-city/raw/HEAD"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.17.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/vscode": "~1.90.0",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.0",
+    "mocha": "^10.8.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1e1b2e",
+    "theme": "dark"
+  }
+}

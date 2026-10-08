@@ -1,0 +1,743 @@
+/* Claude City - level 1 "play rug" city and level 2 building view.
+   Colourful fixed palettes on purpose (toy look); theme-aware through the --vscode-* based variables
+   of styles.css where text / focus / panels are concerned. No inline styles anywhere (CSP). */
+
+/* ================================================================== level 1: play-rug city (isometric) */
+.city-map {
+  --grass: #8fd16a;
+  --tuft: #6db04e;
+  --lawn: #a3dd7f;
+  --park: #8cd36c;
+  --rug-side: #5c9e44;
+  --stitch: rgba(255, 255, 255, 0.7);
+  --road: #7b8494;
+  --line: #ffffff;
+  --curb: #eef0e8;
+  --floor: color-mix(in srgb, var(--cc-bg) 82%, #8ec9ff 18%);
+  background: radial-gradient(1400px 700px at 50% 40%, color-mix(in srgb, var(--floor) 70%, #fff 30%), var(--floor));
+}
+body.vscode-dark .city-map,
+body.vscode-high-contrast .city-map {
+  --grass: #4f9246;
+  --tuft: #3f7c38;
+  --lawn: #5ea553;
+  --park: #519a48;
+  --rug-side: #2d5a28;
+  --stitch: rgba(255, 255, 255, 0.45);
+  --road: #4a5160;
+  --line: #e8e8e8;
+  --curb: #a8b0a0;
+  --floor: color-mix(in srgb, var(--cc-bg) 88%, #3b6ea8 12%);
+  background: radial-gradient(1400px 700px at 50% 40%, color-mix(in srgb, var(--floor) 85%, #fff 6%), var(--floor));
+}
+.tint-dusk .city-map {
+  --grass: #84bf6a;
+  --lawn: #97c97c;
+}
+.tint-night .city-map {
+  --grass: #3f7744;
+  --tuft: #35663a;
+  --lawn: #4a8650;
+  --park: #437d47;
+}
+.city-map.is-hidden {
+  display: none;
+}
+
+/* ground */
+.rug-top {
+  fill: url(#cc-grass);
+  stroke: color-mix(in srgb, var(--rug-side) 80%, #000);
+  stroke-width: 1.5;
+}
+.grass-bg {
+  fill: var(--grass);
+}
+.grass-tuft {
+  fill: none;
+  stroke: var(--tuft);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.park-bg {
+  fill: var(--park);
+}
+.park-dot {
+  fill: var(--tuft);
+}
+.rug-side--l {
+  fill: var(--rug-side);
+}
+.rug-side--r {
+  fill: color-mix(in srgb, var(--rug-side) 78%, #000);
+}
+.rug-stitch {
+  fill: none;
+  stroke: var(--stitch);
+  stroke-width: 2;
+  stroke-dasharray: 7 6;
+}
+.road {
+  fill: var(--road);
+}
+.lawn {
+  stroke: var(--curb);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.lawn--building {
+  fill: var(--lawn);
+}
+.lawn--park {
+  fill: url(#cc-park);
+}
+.road-centre {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.6;
+  stroke-dasharray: 7 7;
+  opacity: 0.85;
+}
+.zebra {
+  fill: var(--line);
+  opacity: 0.92;
+}
+
+/* decorations */
+.deco-shadow,
+.car-shadow {
+  fill: #000;
+  opacity: 0.17;
+}
+.trunk {
+  fill: #8b5a2b;
+}
+.leaf-a {
+  fill: #3fa34d;
+}
+.leaf-b {
+  fill: #2c8a3c;
+}
+.leaf-hi {
+  fill: #fff;
+  opacity: 0.28;
+}
+.dv-1 .leaf-a {
+  fill: #66c24f;
+}
+.dv-1 .leaf-b {
+  fill: #47a83c;
+}
+.deco-tree-round.dv-2 .leaf-a {
+  fill: #f0a83a;
+}
+.deco-tree-round.dv-2 .leaf-b {
+  fill: #d9822b;
+}
+.deco-tree-cone .leaf-a {
+  fill: #2f9a63;
+}
+.deco-tree-cone .leaf-b {
+  fill: #23784c;
+}
+.deco-bush .leaf-a {
+  fill: #55b84a;
+}
+.flowerbed {
+  fill: #7a5a33;
+  opacity: 0.45;
+}
+.flower.fl-0 {
+  fill: #ff5d8f;
+}
+.flower.fl-1 {
+  fill: #ffd23f;
+}
+.flower.fl-2 {
+  fill: #ffffff;
+}
+.flower.fl-3 {
+  fill: #b388ff;
+}
+.bench-seat,
+.bench-back {
+  stroke: #b0612e;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  fill: none;
+}
+.bench-leg {
+  stroke: #4b5563;
+  stroke-width: 1.4;
+  fill: none;
+}
+.lamp-pole {
+  stroke: #4b5563;
+  stroke-width: 2;
+}
+.lamp-arm {
+  stroke: #4b5563;
+  stroke-width: 1.6;
+  fill: none;
+}
+.lamp-light {
+  fill: #fff6c2;
+  stroke: #9ca3af;
+  stroke-width: 0.8;
+}
+.lamp-glow {
+  fill: #ffe066;
+  opacity: 0;
+}
+.tint-dusk .lamp-glow {
+  opacity: 0.3;
+}
+.tint-night .lamp-glow {
+  opacity: 0.45;
+}
+.tl-box {
+  fill: #1f2937;
+}
+.tl {
+  fill: #4b5563;
+}
+.tl-red {
+  fill: #ef4444;
+  animation: cc-tl-red 9s steps(1) infinite;
+}
+.tl-yellow {
+  animation: cc-tl-yellow 9s steps(1) infinite;
+}
+.tl-green {
+  animation: cc-tl-green 9s steps(1) infinite;
+}
+.dv-1 .tl {
+  animation-delay: -3s;
+}
+.dv-2 .tl {
+  animation-delay: -6s;
+}
+@keyframes cc-tl-red {
+  0% {
+    fill: #ef4444;
+  }
+  45% {
+    fill: #4b5563;
+  }
+}
+@keyframes cc-tl-green {
+  0% {
+    fill: #4b5563;
+  }
+  45% {
+    fill: #22c55e;
+  }
+  88% {
+    fill: #4b5563;
+  }
+}
+@keyframes cc-tl-yellow {
+  0% {
+    fill: #4b5563;
+  }
+  88% {
+    fill: #facc15;
+  }
+}
+.pond-rim {
+  fill: #cdb98d;
+}
+.pond-water {
+  fill: #4fb3e8;
+}
+.pond-hi {
+  fill: #fff;
+  opacity: 0.4;
+}
+.lily {
+  fill: #3f9b4b;
+}
+.reeds {
+  stroke: #3d7f3a;
+  stroke-width: 1.6;
+  fill: none;
+  stroke-linecap: round;
+}
+.fountain-stone {
+  fill: #d8dce2;
+  stroke: #9aa1ab;
+  stroke-width: 1;
+}
+.fountain-water {
+  fill: #5fc2f2;
+}
+.fountain-spray path {
+  stroke: #d4f1ff;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+}
+.fountain-spray {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: cc-spray 1.8s ease-in-out infinite;
+}
+@keyframes cc-spray {
+  0%,
+  100% {
+    transform: scaleY(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scaleY(0.82);
+    opacity: 0.7;
+  }
+}
+.swing-frame {
+  stroke: #ef4444;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+}
+.swing-rope {
+  stroke: #6b7280;
+  stroke-width: 1;
+}
+.swing-seat {
+  stroke: #2563eb;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+/* toy cars */
+.car--0 {
+  --car: #ef4444;
+}
+.car--1 {
+  --car: #3b82f6;
+}
+.car--2 {
+  --car: #f59e0b;
+}
+.car--3 {
+  --car: #10b981;
+}
+.car--4 {
+  --car: #8b5cf6;
+}
+.car--5 {
+  --car: #ec4899;
+}
+.car--taxi {
+  --car: #facc15;
+}
+.car-side {
+  fill: var(--car);
+}
+.car-front {
+  fill: color-mix(in srgb, var(--car) 72%, #000);
+}
+.car-top {
+  fill: color-mix(in srgb, var(--car) 78%, #fff);
+}
+.car-cabin-top {
+  fill: color-mix(in srgb, var(--car) 55%, #fff);
+}
+.car-shape polygon {
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+}
+.car-glass {
+  fill: #c4e6ff;
+}
+.car-wheel {
+  fill: #1f2937;
+}
+.car-light {
+  fill: #fff7b0;
+}
+.taxi-sign rect {
+  fill: #111827;
+  stroke: #facc15;
+  stroke-width: 1;
+}
+.toy-car {
+  cursor: pointer;
+}
+.toy-car--taxi:focus {
+  outline: none;
+}
+.toy-car--taxi:focus-visible .car-shape polygon {
+  stroke: var(--vscode-focusBorder);
+  stroke-width: 1.6;
+}
+.car-beep {
+  opacity: 0;
+  pointer-events: none;
+}
+.car-beep rect {
+  fill: #fff;
+  stroke: #111827;
+  stroke-width: 1;
+}
+.car-beep text {
+  fill: #111827;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--cc-font);
+}
+
+/* houses: 8 cheerful palettes (deterministic per workspace) */
+.pal-0 {
+  --wall: #f38b7f;
+  --roof: #c0392b;
+}
+.pal-1 {
+  --wall: #fcc934;
+  --roof: #d35400;
+}
+.pal-2 {
+  --wall: #81c995;
+  --roof: #1e8449;
+}
+.pal-3 {
+  --wall: #8ab4f8;
+  --roof: #2457a8;
+}
+.pal-4 {
+  --wall: #c58af9;
+  --roof: #6c3483;
+}
+.pal-5 {
+  --wall: #f7a8c4;
+  --roof: #b03a60;
+}
+.pal-6 {
+  --wall: #6fd3e6;
+  --roof: #117a8b;
+}
+.pal-7 {
+  --wall: #f4d9a8;
+  --roof: #8e5a1e;
+}
+.bld-lift polygon {
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+.bld-wall.bld-face-l {
+  fill: var(--wall);
+}
+.bld-wall.bld-face-r {
+  fill: color-mix(in srgb, var(--wall) 76%, #000);
+}
+.bld-base.bld-face-l {
+  fill: #a1978a;
+}
+.bld-base.bld-face-r {
+  fill: #7d7469;
+}
+.bld-parapet.bld-face-l {
+  fill: var(--roof);
+}
+.bld-parapet.bld-face-r {
+  fill: color-mix(in srgb, var(--roof) 75%, #000);
+}
+.bld-roof {
+  fill: color-mix(in srgb, var(--roof) 80%, #fff);
+}
+.bld-roof-inner {
+  fill: color-mix(in srgb, var(--roof) 55%, #6b6b6b);
+}
+.bld-floorline {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.16);
+  stroke-width: 1;
+}
+.win--working {
+  fill: #ffd54a;
+  animation: cc-win-flicker 2.6s ease-in-out infinite;
+}
+.win--waiting {
+  fill: #ff9800;
+  animation: cc-glow 1.4s ease-in-out infinite;
+}
+.win--idle {
+  fill: #8db8ea;
+}
+.win--resting {
+  fill: #5d7896;
+}
+.win--done {
+  fill: #4ade80;
+}
+.win--failed {
+  fill: #ef4444;
+}
+.win--stopped {
+  fill: #a3a3a3;
+}
+.win--shut {
+  fill: #b9b2a8;
+  stroke-dasharray: 2 1.5;
+}
+@keyframes cc-win-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.8;
+  }
+  45% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.9;
+  }
+}
+.tint-night .win--working {
+  fill: #ffe27a;
+}
+.bld-door {
+  fill: #6b3f1d;
+}
+.bld-step {
+  fill: #d4d8dd;
+}
+.bld-step--front {
+  fill: #b8bdc4;
+}
+.arch-box {
+  fill: #e0aa6b;
+  stroke: #7a5230;
+}
+.arch-more {
+  fill: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--cc-mono);
+  paint-order: stroke;
+  stroke: rgba(60, 40, 20, 0.85);
+  stroke-width: 2.6;
+}
+.door-alert circle {
+  fill: #ff8a00;
+  stroke: #fff;
+  stroke-width: 1.2;
+}
+.door-alert text {
+  fill: #fff;
+  font-size: 8px;
+  font-weight: 900;
+}
+.door-alert {
+  animation: cc-pulse 1.2s ease-in-out infinite;
+}
+.bld-badge circle {
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+.bld-badge--live circle {
+  fill: #2563eb;
+}
+.bld-badge--waiting circle {
+  fill: #f97316;
+}
+.bld-badge text {
+  fill: #fff;
+  font-size: 9px;
+  font-weight: 800;
+}
+.bld-more {
+  fill: var(--cc-fg);
+  font-size: 9px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--cc-bg);
+  stroke-width: 2.5;
+}
+.roof-unit .ru-l {
+  fill: #c9ced6;
+}
+.roof-unit .ru-r {
+  fill: #9aa1ab;
+}
+.roof-unit .ru-t {
+  fill: #e5e8ec;
+}
+.roof-flag line {
+  stroke: #374151;
+  stroke-width: 1.4;
+}
+.roof-flag polygon {
+  fill: #e11d48;
+}
+.plate-board {
+  fill: #fffdf5;
+  stroke: #5b4636;
+  stroke-width: 1.2;
+}
+.plate-text {
+  fill: #2d2a26;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--cc-font);
+}
+.bld-shadow {
+  fill: #000;
+  opacity: 0.18;
+  transition: opacity 0.2s;
+}
+.bld-lift {
+  transition: transform 0.18s ease-out;
+}
+.bld-shell:hover .bld-lift,
+.bld-shell:focus-visible .bld-lift,
+.iso-building.is-selected .bld-lift {
+  transform: translateY(-5px);
+}
+.iso-building:hover .bld-shadow,
+.iso-building.is-selected .bld-shadow {
+  opacity: 0.32;
+}
+.bld-shell:focus {
+  outline: none;
+}
+.bld-shell:focus-visible .focus-ring {
+  stroke: var(--vscode-focusBorder);
+  stroke-width: 2.5;
+  stroke-dasharray: 5 3;
+}
+.iso-building.is-selected .focus-ring {
+  stroke: var(--cc-neon);
+  stroke-width: 3;
+}
+.bld-shell {
+  cursor: pointer;
+}
+/* folder not found: construction site */
+.bld--missing .bld-wall,
+.bld--missing .bld-parapet,
+.bld--missing .bld-roof {
+  fill-opacity: 0.35;
+  stroke-dasharray: 4 3;
+}
+.scaffold {
+  stroke: #d97706;
+  stroke-width: 1.4;
+  fill: none;
+}
+.fence {
+  stroke: #f59e0b;
+  stroke-width: 2.2;
+  stroke-dasharray: 3 3;
+  fill: none;
+}
+.cone polygon {
+  fill: #f97316;
+}
+.cone-stripe {
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+/* no sessions at all: calm, closed shutters, a bit washed out */
+.bld--quiet .bld-wall.bld-face-l {
+  fill: color-mix(in srgb, var(--wall) 60%, #c8c8c8);
+}
+.bld--quiet .bld-wall.bld-face-r {
+  fill: color-mix(in srgb, var(--wall) 45%, #8a8a8a);
+}
+/* subagents walking to / from the door */
+.door-walker-inner {
+  opacity: 0;
+}
+.door-walker {
+  pointer-events: none;
+}
+.mini-body {
+  fill: #2563eb;
+}
+.mini-head {
+  fill: #f1c27d;
+}
+.mini-legs {
+  stroke: #374151;
+  stroke-width: 1.2;
+}
+
+/* level of detail while zoomed out */
+.city-svg.lod-far .deco--small,
+.city-svg.lod-far .plate,
+.city-svg.lod-far .arch-more,
+.city-svg.lod-far .bld-more,
+.city-svg.lod-far .road-centre,
+.city-svg.lod-far .door-walker,
+.city-svg.lod-far .roof-unit,
+.city-svg.lod-far .leaf-hi {
+  display: none;
+}
+.city-svg.lod-tiny .zebra,
+.city-svg.lod-tiny .road-props,
+.city-svg.lod-tiny .bld-floorline,
+.city-svg.lod-tiny .rug-stitch {
+  display: none;
+}
+
+/* high contrast: outlines, no textures */
+body.vscode-high-contrast .rug-top,
+body.vscode-high-contrast-light .rug-top,
+body.vscode-high-contrast .lawn,
+body.vscode-high-contrast-light .lawn {
+  fill: var(--cc-bg);
+  stroke: var(--vscode-contrastBorder);
+}
+body.vscode-high-contrast .road,
+body.vscode-high-contrast-light .road {
+  fill: none;
+  stroke: var(--vscode-contrastBorder);
+}
+body.vscode-high-contrast .bld-lift polygon,
+body.vscode-high-contrast-light .bld-lift polygon {
+  stroke: var(--vscode-contrastBorder);
+  stroke-width: 1.4;
+}
+body.vscode-high-contrast .rug-side,
+body.vscode-high-contrast-light .rug-side,
+body.vscode-high-contrast .deco-shadow,
+body.vscode-high-contrast-light .deco-shadow,
+body.vscode-high-contrast .bld-shadow,
+body.vscode-high-contrast-light .bld-shadow {
+  display: none;
+}
+
+/* pitched roof (houses with 1-2 floors) */
+.bld-roof-front {
+  fill: var(--roof);
+}
+.bld-roof-back {
+  fill: color-mix(in srgb, var(--roof) 70%, #000);
+}
+.bld-gable.bld-face-r {
+  fill: color-mix(in srgb, var(--wall) 70%, #000);
+}
+.bld-roof-tiles {
+  fill: none;
+  stroke: color-mix(in srgb, var(--roof) 60%, #000);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+.bld-chimney.bld-face-l {
+  fill: #b5651d;
+}
+.bld-chimney.bld-face-r {
+  fill: #8a4b14;
+}
+.bld-chimney-top {
+  fill: #3f3f46;
+}
+
+.plates {
+  pointer-events: none;
+}

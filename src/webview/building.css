@@ -1,0 +1,461 @@
+/* Claude City - level 2: cut-away building view ("doll house") with rooms and the basement archive.
+   Colourful fixed palettes, theme-aware where text sits on them. No inline styles (CSP). */
+
+.map-area {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 240px;
+}
+.map-area > .city-map {
+  flex: 1;
+}
+.building-gone {
+  flex: 1;
+  border-radius: var(--cc-radius);
+  border: 1px solid var(--cc-glass-border);
+}
+
+.building-view {
+  --bv-room: #fdf6e3;
+  --bv-resting: #e6ebf3;
+  --bv-floor: #c8a27a;
+  --bv-inside: #fffaf0;
+  --bv-lobby: #f6efe0;
+  --bv-earth: #7a5536;
+  --bv-text: #2d2a26;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  border-radius: var(--cc-radius);
+  border: 1px solid var(--cc-glass-border);
+  background: #dff3ff;
+}
+body.vscode-dark .building-view,
+body.vscode-high-contrast .building-view {
+  --bv-room: #2b2e36;
+  --bv-resting: #252a34;
+  --bv-floor: #5a4632;
+  --bv-inside: #24262c;
+  --bv-lobby: #2a2c31;
+  --bv-earth: #3f2d1f;
+  --bv-text: #e8e6e3;
+  background: #1d2b3f;
+}
+.building-view.is-panning {
+  cursor: grabbing;
+}
+.building-view:focus {
+  outline: none;
+}
+.building-view:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: -2px;
+}
+.building-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: var(--cc-font);
+  user-select: none;
+}
+
+/* breadcrumb */
+.breadcrumb {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 60px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 4px 10px;
+  cursor: default;
+  width: fit-content;
+  max-width: calc(100% - 70px);
+}
+.breadcrumb-sep {
+  color: var(--cc-muted);
+}
+.breadcrumb-current {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.breadcrumb .secondary-button {
+  flex: 0 0 auto;
+}
+
+/* outside */
+.sky-top {
+  stop-color: #7cc8ff;
+}
+.sky-bottom {
+  stop-color: #e3f4ff;
+}
+body.vscode-dark .sky-top,
+body.vscode-high-contrast .sky-top {
+  stop-color: #13243d;
+}
+body.vscode-dark .sky-bottom,
+body.vscode-high-contrast .sky-bottom {
+  stop-color: #34557d;
+}
+.tint-night .sky-top {
+  stop-color: #0b1426;
+}
+.tint-night .sky-bottom {
+  stop-color: #22385a;
+}
+.bv-sky {
+  fill: url(#cc-sky);
+}
+.bv-earth {
+  fill: var(--bv-earth);
+}
+.bv-grass {
+  fill: #66bb47;
+}
+
+/* building shell */
+.bv-roof {
+  fill: var(--roof);
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 1;
+}
+.bv-roof-name {
+  fill: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 3;
+}
+.bv-frame {
+  fill: var(--wall);
+  stroke: rgba(0, 0, 0, 0.3);
+}
+.bv-inside {
+  fill: var(--bv-inside);
+}
+.bv-slab {
+  fill: color-mix(in srgb, var(--wall) 45%, #5a5a5a);
+}
+
+/* elevator */
+.elevator-shaft {
+  fill: #cfd5dc;
+  stroke: #8b949e;
+}
+body.vscode-dark .elevator-shaft {
+  fill: #3a3f47;
+}
+.elevator-cable {
+  stroke: #6b7280;
+  stroke-width: 1.5;
+}
+.elevator-cabin {
+  fill: #f3c745;
+  stroke: #8a6d1d;
+}
+.elevator-door {
+  fill: #6b7280;
+}
+
+/* lobby */
+.lobby-bg {
+  fill: var(--bv-lobby);
+}
+.lobby-sign {
+  fill: var(--bv-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.lobby-door {
+  fill: #6b3f1d;
+}
+.lobby-knob {
+  fill: #f5c542;
+}
+.reception rect {
+  fill: #8b5a2b;
+}
+.plant-pot {
+  fill: #c2410c;
+}
+.plant {
+  fill: #3fa34d;
+}
+.more-door > rect:first-of-type {
+  fill: #7c4a1e;
+}
+.more-sign {
+  fill: #fef3c7;
+  stroke: #b45309;
+}
+.more-door text {
+  fill: #7c2d12;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+/* rooms */
+.iroom-bg {
+  fill: var(--bv-room);
+  stroke: rgba(0, 0, 0, 0.18);
+}
+.iroom--resting .iroom-bg {
+  fill: var(--bv-resting);
+}
+.iroom-light {
+  fill: transparent;
+  pointer-events: none;
+}
+.iroom--working .iroom-light {
+  fill: rgba(255, 205, 60, 0.16);
+}
+.iroom--waiting .iroom-light {
+  fill: rgba(255, 140, 0, 0.2);
+  animation: cc-glow 2s ease-in-out infinite;
+}
+.iroom--failed .iroom-light {
+  fill: rgba(239, 68, 68, 0.16);
+}
+.iroom--done .iroom-light {
+  fill: rgba(74, 222, 128, 0.12);
+}
+.iroom--stopped {
+  opacity: 0.65;
+}
+.iroom--attention .iroom-bg {
+  stroke: #ff8a00;
+  stroke-width: 2;
+}
+.iroom-floor {
+  fill: var(--bv-floor);
+}
+.iroom-window rect {
+  fill: #bfe3ff;
+  stroke: #8b949e;
+}
+.iroom-window line {
+  stroke: #8b949e;
+}
+.tint-night .iroom-window rect {
+  fill: #23395b;
+}
+.iroom-label {
+  fill: var(--bv-text);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--cc-mono);
+}
+.iroom-empty {
+  fill: var(--cc-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+.tier-pill rect {
+  fill: #2563eb;
+}
+.tier-pill--recent rect {
+  fill: #64748b;
+}
+.tier-pill text {
+  fill: #fff;
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.iroom--working .room-glyph {
+  color: var(--cc-working);
+}
+.iroom--waiting .room-glyph {
+  color: var(--cc-waiting);
+}
+.iroom--done .room-glyph {
+  color: var(--cc-done);
+}
+.iroom--failed .room-glyph {
+  color: var(--cc-failed);
+}
+.iroom--resting .room-glyph {
+  color: var(--cc-muted);
+}
+.warn-sign polygon {
+  fill: #ef4444;
+}
+.warn-sign text {
+  fill: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+.resting-monitor {
+  fill: #64748b;
+}
+.empty-desk rect {
+  fill: color-mix(in srgb, var(--bv-text) 30%, transparent);
+}
+.iroom.is-selected > .focus-ring,
+.abox.is-selected > .focus-ring {
+  stroke: var(--cc-neon);
+  stroke-width: 2.5;
+}
+
+/* basement */
+.basement-bg {
+  fill: url(#cc-brick);
+  stroke: rgba(0, 0, 0, 0.4);
+}
+.brick-bg {
+  fill: #5d5955;
+}
+.brick-line {
+  stroke: #4a4643;
+  stroke-width: 1;
+  fill: none;
+}
+.basement-title {
+  fill: #f5f0e6;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.basement-empty {
+  fill: #d6d0c6;
+  font-size: 12px;
+  font-style: italic;
+}
+.shelf rect {
+  fill: #a0703f;
+}
+.shelf .shelf-leg {
+  fill: #7a522c;
+}
+.abox-body {
+  fill: #e0aa6b;
+  stroke: #7a5230;
+}
+.abox-lid {
+  fill: #c98d4f;
+  stroke: #7a5230;
+}
+.abox-tag {
+  fill: #fff6e0;
+}
+.abox:hover .abox-body,
+.abox:focus-visible .abox-body,
+.abox.is-selected .abox-body {
+  fill: #f6c88f;
+}
+.abox-tooltip {
+  pointer-events: none;
+}
+.abox-tooltip rect {
+  fill: #111827;
+  opacity: 0.92;
+}
+.abox-tooltip text {
+  fill: #fff;
+  font-size: 10px;
+}
+.basement-more > rect:first-of-type {
+  fill: #f5f0e6;
+}
+.basement-more text {
+  fill: #3b2f25;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* high contrast: borders instead of fills */
+body.vscode-high-contrast .iroom-bg,
+body.vscode-high-contrast-light .iroom-bg,
+body.vscode-high-contrast .abox-body,
+body.vscode-high-contrast-light .abox-body {
+  stroke: var(--vscode-contrastBorder);
+  stroke-width: 1.5;
+}
+body.vscode-high-contrast .basement-bg,
+body.vscode-high-contrast-light .basement-bg {
+  fill: var(--cc-bg);
+  stroke: var(--vscode-contrastBorder);
+}
+
+/* sidebar legend */
+.legend {
+  border-top: 1px solid var(--cc-glass-border);
+  padding-top: 4px;
+}
+.legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  font-size: 0.9em;
+}
+.legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  flex: 0 0 auto;
+}
+.sw-working {
+  background: #ffd54a;
+}
+.sw-waiting {
+  background: #ff9800;
+}
+.sw-idle {
+  background: #8db8ea;
+}
+.sw-resting {
+  background: #5d7896;
+}
+.sw-done {
+  background: #4ade80;
+}
+.sw-failed {
+  background: #ef4444;
+}
+.sw-archive {
+  background: #e0aa6b;
+  border-color: #7a5230;
+}
+.legend-hint {
+  margin: 4px 0 0;
+}
+
+/* sleeping character in a recent room: clearly visible, but calmer than live rooms */
+.iroom .resting-char {
+  opacity: 0.9;
+}
+.iroom .resting-body {
+  fill: #7c93b5;
+  stroke: rgba(0, 0, 0, 0.35);
+}
+.iroom .resting-head {
+  fill: #f1c27d;
+  stroke: rgba(0, 0, 0, 0.35);
+}
+.iroom .resting-desk {
+  fill: #8b6a4a;
+}
+.iroom .resting-z {
+  fill: #3b82f6;
+  font-weight: 800;
+}

@@ -1,0 +1,1308 @@
+/* Claude City - theme-aware styles. Only --vscode-* variables for colors so light, dark and
+   high-contrast themes work. No inline styles are used anywhere (CSP: style-src without 'unsafe-inline'). */
+
+:root {
+  --cc-fg: var(--vscode-foreground);
+  --cc-muted: var(--vscode-descriptionForeground);
+  --cc-bg: var(--vscode-editor-background);
+  --cc-accent: var(--vscode-focusBorder);
+  --cc-neon: var(--vscode-charts-purple, var(--vscode-focusBorder));
+  --cc-working: var(--vscode-charts-blue, #3794ff);
+  --cc-waiting: var(--vscode-charts-yellow, #cca700);
+  --cc-idle: var(--vscode-descriptionForeground);
+  --cc-done: var(--vscode-charts-green, #388a34);
+  --cc-failed: var(--vscode-charts-red, var(--vscode-errorForeground));
+  --cc-stopped: var(--vscode-disabledForeground, #888);
+  --cc-glass: color-mix(in srgb, var(--cc-bg) 72%, transparent);
+  --cc-glass-border: color-mix(in srgb, var(--cc-fg) 14%, transparent);
+  --cc-radius: 10px;
+  --cc-font: var(--vscode-font-family);
+  --cc-mono: var(--vscode-editor-font-family, monospace);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  color: var(--cc-fg);
+  font-family: var(--cc-font);
+  font-size: var(--vscode-font-size, 13px);
+  background: var(--cc-bg);
+}
+
+body.view-sidebar {
+  background: transparent;
+}
+
+#root {
+  height: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.muted {
+  color: var(--cc-muted);
+}
+
+.small {
+  font-size: 0.9em;
+}
+
+.glass {
+  background: var(--cc-glass);
+  border: 1px solid var(--cc-glass-border);
+  border-radius: var(--cc-radius);
+  backdrop-filter: blur(10px) saturate(1.2);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--cc-neon) 25%, transparent) inset,
+    0 8px 24px color-mix(in srgb, #000 12%, transparent);
+}
+
+/* ------------------------------------------------------------------ app shell */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+  padding: 10px;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--cc-neon) 10%, transparent), transparent 60%),
+    radial-gradient(900px 400px at 110% 10%, color-mix(in srgb, var(--cc-working) 8%, transparent), transparent 60%),
+    var(--cc-bg);
+}
+
+.layout {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 300px;
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+@media (max-width: 760px) {
+  .layout {
+    flex-direction: column;
+  }
+  .side-column {
+    width: auto;
+  }
+}
+
+/* ------------------------------------------------------------------ HUD */
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 12px;
+  flex-wrap: wrap;
+}
+
+.hud-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.hud-logo {
+  color: var(--cc-neon);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--cc-neon) 60%, transparent);
+}
+
+.hud-counts {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.hud-count {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--cc-glass-border);
+}
+
+.hud-glyph {
+  font-size: 0.85em;
+}
+.hud-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.hud-label {
+  color: var(--cc-muted);
+  font-size: 0.9em;
+}
+.hud-count--working .hud-glyph {
+  color: var(--cc-working);
+}
+.hud-count--waiting .hud-glyph {
+  color: var(--cc-waiting);
+}
+.hud-count--done .hud-glyph {
+  color: var(--cc-done);
+}
+.hud-count--failed .hud-glyph {
+  color: var(--cc-failed);
+}
+
+.hud-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-updated {
+  color: var(--cc-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9em;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1px solid currentColor;
+}
+.source--live {
+  color: var(--cc-done);
+}
+.source--demo {
+  color: var(--cc-waiting);
+}
+.source--unavailable,
+.source--error {
+  color: var(--cc-failed);
+}
+.source--loading {
+  color: var(--cc-muted);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: cc-pulse 1.6s ease-in-out infinite;
+}
+
+.icon-button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 6px;
+  line-height: 1.2;
+}
+.icon-button:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.primary-button {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 4px;
+  padding: 5px 12px;
+  margin-top: 8px;
+}
+.primary-button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+.primary-button.wide {
+  width: 100%;
+}
+
+.secondary-button {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 4px;
+  padding: 4px 10px;
+  flex: 1;
+}
+.secondary-button:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--vscode-textLink-foreground);
+  text-align: left;
+}
+.link-button:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ banners */
+.banner {
+  padding: 6px 12px;
+  border-radius: var(--cc-radius);
+  border: 1px solid;
+  font-size: 0.95em;
+}
+.banner--demo {
+  border-color: var(--cc-waiting);
+  background: color-mix(in srgb, var(--cc-waiting) 10%, transparent);
+}
+.banner--error {
+  border-color: var(--vscode-inputValidation-errorBorder, var(--cc-failed));
+  background: var(--vscode-inputValidation-errorBackground, transparent);
+}
+
+/* ------------------------------------------------------------------ side panels */
+.detail-panel,
+.event-feed {
+  padding: 10px 12px;
+  overflow: auto;
+}
+.detail-panel {
+  flex-shrink: 0;
+  max-height: 55%;
+}
+.event-feed {
+  flex: 1;
+  min-height: 120px;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title {
+  margin: 0 0 8px;
+  font-size: 0.95em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cc-muted);
+  overflow-wrap: anywhere;
+}
+
+.detail-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  margin: 8px 0;
+}
+.detail-list dt {
+  color: var(--cc-muted);
+}
+.detail-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--cc-mono);
+  font-size: 0.92em;
+}
+
+.detail-links {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+  display: grid;
+  gap: 4px;
+}
+.detail-subtitle {
+  margin: 10px 0 4px;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--cc-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.archived-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  overflow-wrap: anywhere;
+}
+.archived-actions {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.small-button {
+  padding: 1px 6px;
+  font-size: 0.85em;
+}
+
+.phase-pill {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-weight: 600;
+}
+.phase--working,
+.char-pill--working,
+.char-pill--busy {
+  color: var(--cc-working);
+}
+.phase--waiting,
+.char-pill--blocked {
+  color: var(--cc-waiting);
+}
+.phase--done,
+.char-pill--done {
+  color: var(--cc-done);
+}
+.phase--failed,
+.char-pill--failed {
+  color: var(--cc-failed);
+}
+.phase--idle,
+.phase--unknown,
+.phase--stopped,
+.char-pill--idle,
+.char-pill--stopped {
+  color: var(--cc-muted);
+}
+
+.event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.event-button {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 3px 4px;
+  animation: cc-slide-in 0.35s ease-out;
+}
+.event-button:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.event-glyph {
+  text-align: center;
+  font-weight: 700;
+}
+.event-message {
+  overflow-wrap: anywhere;
+}
+.event-time {
+  color: var(--cc-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85em;
+}
+.event-to--working .event-glyph {
+  color: var(--cc-working);
+}
+.event-to--waiting .event-glyph {
+  color: var(--cc-waiting);
+}
+.event-to--done .event-glyph {
+  color: var(--cc-done);
+}
+.event-to--failed .event-glyph {
+  color: var(--cc-failed);
+}
+
+/* ------------------------------------------------------------------ city map */
+.city-map {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 240px;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  border-radius: var(--cc-radius);
+  border: 1px solid var(--cc-glass-border);
+  background: color-mix(in srgb, var(--cc-bg) 88%, var(--cc-neon) 4%);
+}
+
+.city-map.is-panning {
+  cursor: grabbing;
+}
+.city-map:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: -2px;
+}
+.city-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: var(--cc-font);
+  user-select: none;
+}
+
+.city-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--cc-muted);
+}
+.city-empty-title {
+  font-size: 1.3em;
+  color: var(--cc-fg);
+}
+
+.street rect {
+  fill: color-mix(in srgb, var(--cc-fg) 9%, transparent);
+}
+
+/* focus rings for SVG "buttons" */
+.focus-ring {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2;
+  pointer-events: none;
+}
+[role='button']:focus {
+  outline: none;
+}
+[role='button']:focus-visible > .focus-ring,
+g[role='button']:focus-visible > .focus-ring {
+  stroke: var(--vscode-focusBorder);
+  stroke-dasharray: 4 3;
+}
+.is-selected > .focus-ring {
+  stroke: var(--cc-neon);
+}
+
+g[role='button'] {
+  cursor: pointer;
+}
+
+/* buildings */
+
+/* no sessions at all: calm, unlit */
+
+/* imported folder not found on the last rescan */
+
+.city-empty-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* rooms */
+
+.room--stopped {
+  opacity: 0.55;
+}
+
+.room-glyph circle {
+  fill: color-mix(in srgb, var(--cc-bg) 60%, transparent);
+  stroke: currentColor;
+}
+.room-glyph text {
+  fill: currentColor;
+  font-size: 9px;
+  font-weight: 700;
+}
+.room-glyph {
+  color: var(--cc-idle);
+}
+.room--working .room-glyph {
+  color: var(--cc-working);
+}
+.room--waiting .room-glyph {
+  color: var(--cc-waiting);
+}
+.room--done .room-glyph {
+  color: var(--cc-done);
+}
+.room--failed .room-glyph {
+  color: var(--cc-failed);
+}
+.room-overflow {
+  fill: var(--cc-muted);
+  font-size: 10px;
+}
+
+/* archive (past sessions): dimmed, static, smaller */
+
+.room--archived {
+  opacity: 0.6;
+}
+.room--archived:hover,
+.room--archived:focus-visible,
+.room--archived.is-selected {
+  opacity: 1;
+}
+
+/* recent (resting) sessions: normal room, dimmed parked character */
+
+.room--resting .room-glyph {
+  color: var(--cc-muted);
+}
+.resting-char {
+  opacity: 0.55;
+}
+.room--resting:hover .resting-char,
+.room--resting:focus-visible .resting-char,
+.room--resting.is-selected .resting-char {
+  opacity: 0.9;
+}
+.resting-desk {
+  fill: color-mix(in srgb, var(--cc-fg) 30%, transparent);
+}
+.resting-body,
+.resting-head {
+  fill: color-mix(in srgb, var(--cc-idle) 55%, var(--cc-bg));
+  stroke: color-mix(in srgb, var(--cc-fg) 30%, transparent);
+}
+.resting-z {
+  fill: var(--cc-muted);
+  font-size: 8px;
+  font-family: var(--cc-mono);
+}
+.resting-z--big {
+  font-size: 10px;
+}
+.hud-recent,
+.sidebar-recent {
+  color: var(--cc-muted);
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------------ characters */
+.char .desk rect,
+.char .desk line {
+  fill: color-mix(in srgb, var(--cc-fg) 35%, transparent);
+  stroke: color-mix(in srgb, var(--cc-fg) 35%, transparent);
+  stroke-width: 1.5;
+}
+.char .desk .monitor {
+  fill: color-mix(in srgb, var(--cc-bg) 50%, var(--cc-fg) 10%);
+  stroke: color-mix(in srgb, var(--cc-fg) 45%, transparent);
+  stroke-width: 1;
+}
+.char .screen-lines line {
+  stroke: var(--cc-working);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0;
+}
+.char--working .screen-lines line,
+.char--busy .screen-lines line {
+  opacity: 0.9;
+}
+.char--failed .screen-lines line {
+  stroke: var(--cc-failed);
+  opacity: 0.9;
+}
+.char--done .screen-lines line {
+  stroke: var(--cc-done);
+  opacity: 0.7;
+}
+
+.char .chair,
+.char .chair-leg {
+  fill: color-mix(in srgb, var(--cc-fg) 30%, transparent);
+  stroke: color-mix(in srgb, var(--cc-fg) 30%, transparent);
+  stroke-width: 1.5;
+}
+.char .legs,
+.char .arm path,
+.char .raised-arm path,
+.char .arm-down {
+  fill: none;
+  stroke: color-mix(in srgb, var(--cc-fg) 70%, transparent);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.char .head {
+  fill: color-mix(in srgb, var(--cc-fg) 80%, var(--cc-bg));
+}
+.char .torso {
+  fill: var(--shirt);
+}
+.shirt-0 {
+  --shirt: var(--vscode-charts-blue, #3794ff);
+}
+.shirt-1 {
+  --shirt: var(--vscode-charts-purple, #b180d7);
+}
+.shirt-2 {
+  --shirt: var(--vscode-charts-orange, #d18616);
+}
+.shirt-3 {
+  --shirt: var(--vscode-charts-green, #388a34);
+}
+.shirt-4 {
+  --shirt: var(--vscode-terminal-ansiCyan, #11a8cd);
+}
+.shirt-5 {
+  --shirt: var(--vscode-terminal-ansiMagenta, #bc3fbc);
+}
+
+.char .badge circle {
+  fill: var(--cc-bg);
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.char .badge text {
+  fill: currentColor;
+  font-size: 8px;
+  font-weight: 800;
+}
+.char .badge {
+  color: var(--cc-idle);
+}
+.char--working .badge,
+.char--busy .badge {
+  color: var(--cc-working);
+}
+.char--blocked .badge {
+  color: var(--cc-waiting);
+}
+.char--done .badge {
+  color: var(--cc-done);
+}
+.char--failed .badge {
+  color: var(--cc-failed);
+}
+.char--failed .torso {
+  stroke: var(--cc-failed);
+  stroke-width: 1.5;
+}
+.char--stopped {
+  opacity: 0.45;
+}
+
+/* animations - applied only to inner groups that have no transform attribute */
+.arm,
+.torso-group,
+.raised-arm,
+.char .badge circle {
+  transform-box: fill-box;
+}
+.char--working .arm {
+  animation: cc-type 0.9s ease-in-out infinite;
+  transform-origin: 0% 0%;
+}
+.char--busy .arm {
+  animation: cc-type 0.38s ease-in-out infinite;
+  transform-origin: 0% 0%;
+}
+.char--busy .screen-lines line {
+  animation: cc-flicker 0.6s steps(2) infinite;
+}
+.char--idle .torso-group {
+  animation: cc-breathe 3.6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.char--done .torso-group {
+  transform: rotate(-6deg);
+  transform-origin: 50% 100%;
+}
+.char--blocked .raised-arm {
+  animation: cc-wave 1.2s ease-in-out infinite;
+  transform-origin: 0% 100%;
+}
+.char--blocked .badge circle {
+  animation: cc-pop 1.2s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+.char--failed .badge circle {
+  animation: cc-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cc-type {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(1.6px);
+  }
+}
+@keyframes cc-breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.035);
+  }
+}
+@keyframes cc-wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-12deg);
+  }
+}
+@keyframes cc-pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+@keyframes cc-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes cc-glow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes cc-flicker {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+@keyframes cc-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reduced motion: disable loops, keep static state indicators (glyphs, colors, poses). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+*::before,
+*::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+body.vscode-reduce-motion *,
+body.vscode-reduce-motion *::before,
+body.vscode-reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* High contrast: rely on borders */
+
+body.vscode-high-contrast .room--archived,
+body.vscode-high-contrast-light .room--archived,
+body.vscode-high-contrast .resting-char,
+body.vscode-high-contrast-light .resting-char {
+  opacity: 1;
+}
+
+/* subtle archived counters (HUD / sidebar) */
+.hud-archived,
+.sidebar-archived {
+  color: var(--cc-muted);
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------------ sidebar */
+.sidebar {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sidebar-source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sidebar-error {
+  margin: 0;
+  color: var(--vscode-errorForeground);
+  overflow-wrap: anywhere;
+}
+.tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.tile {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--cc-glass-border);
+  background: color-mix(in srgb, var(--cc-fg) 4%, transparent);
+}
+.tile-glyph {
+  grid-row: span 2;
+  align-self: center;
+  font-weight: 700;
+}
+.tile-value {
+  font-size: 1.35em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.tile-label {
+  color: var(--cc-muted);
+  font-size: 0.85em;
+}
+.tile--working .tile-glyph {
+  color: var(--cc-working);
+}
+.tile--waiting .tile-glyph {
+  color: var(--cc-waiting);
+}
+.tile--done .tile-glyph {
+  color: var(--cc-done);
+}
+.tile--failed .tile-glyph {
+  color: var(--cc-failed);
+}
+.sidebar-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ================================================================== phase 3-5 additions */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------------ toolbar (search + filters) */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 6px 10px;
+}
+.search-input {
+  flex: 1 1 220px;
+  min-width: 160px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--cc-glass-border));
+  border-radius: 4px;
+  padding: 4px 8px;
+  font: inherit;
+}
+.search-input:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  border: 1px solid var(--cc-glass-border);
+  background: transparent;
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 0.9em;
+  color: var(--cc-muted);
+}
+.chip:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+.chip.is-on {
+  color: var(--cc-fg);
+  border-color: var(--vscode-focusBorder);
+  background: color-mix(in srgb, var(--vscode-focusBorder) 16%, transparent);
+}
+.chip--working span {
+  color: var(--cc-working);
+}
+.chip--waiting span {
+  color: var(--cc-waiting);
+}
+.chip--done span {
+  color: var(--cc-done);
+}
+.chip--failed span {
+  color: var(--cc-failed);
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9em;
+  color: var(--cc-muted);
+  cursor: pointer;
+}
+.check input {
+  accent-color: var(--vscode-focusBorder);
+}
+
+/* ------------------------------------------------------------------ zoom controls */
+.zoom-controls {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--cc-glass);
+  border: 1px solid var(--cc-glass-border);
+  cursor: default;
+  z-index: 1;
+}
+.zoom-controls .icon-button {
+  min-width: 26px;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------------ HUD highlights */
+.hud-highlights {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.attention-button {
+  border: 1px solid var(--cc-waiting);
+  background: color-mix(in srgb, var(--cc-waiting) 16%, transparent);
+  color: var(--cc-fg);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-weight: 600;
+  animation: cc-ring 2s ease-in-out infinite;
+}
+@keyframes cc-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--cc-waiting) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cc-waiting) 35%, transparent);
+  }
+}
+.attention-button.wide {
+  width: 100%;
+  border-radius: 6px;
+}
+.hud-most-active {
+  font-size: 0.92em;
+}
+.hud-count--completed .hud-glyph {
+  color: var(--cc-done);
+}
+.hook-badge.hook--on {
+  color: var(--cc-done);
+}
+.hook-badge.hook--warn {
+  color: var(--cc-waiting);
+}
+.hook-badge.hook--error {
+  color: var(--cc-failed);
+}
+.hook-badge.hook--off {
+  color: var(--cc-muted);
+}
+
+/* ------------------------------------------------------------------ banners / states */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.banner .secondary-button {
+  flex: 0 0 auto;
+}
+.banner--info {
+  border-color: var(--vscode-focusBorder);
+  background: color-mix(in srgb, var(--vscode-focusBorder) 8%, transparent);
+}
+.banner--warn {
+  border-color: var(--cc-waiting);
+  background: color-mix(in srgb, var(--cc-waiting) 8%, transparent);
+}
+.spinner {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--cc-fg) 20%, transparent);
+  border-top-color: var(--cc-neon);
+  animation: cc-spin 0.9s linear infinite;
+}
+@keyframes cc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ------------------------------------------------------------------ details */
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.detail-actions .primary-button,
+.detail-actions .secondary-button {
+  margin-top: 0;
+  flex: 0 1 auto;
+}
+.copy-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.copy-row code {
+  overflow-wrap: anywhere;
+}
+.attention-note {
+  margin: 8px 0 0;
+  padding: 4px 8px;
+  border-left: 3px solid var(--cc-waiting);
+  background: color-mix(in srgb, var(--cc-waiting) 10%, transparent);
+  border-radius: 4px;
+}
+.panel-title:focus {
+  outline: none;
+}
+.panel-title:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+}
+.hook-offer {
+  border-top: 1px solid var(--cc-glass-border);
+  padding-top: 6px;
+}
+.hook-offer p {
+  margin: 0 0 6px;
+}
+.event--hook .event-glyph {
+  color: var(--cc-neon);
+}
+.event--task-completed .event-glyph {
+  color: var(--cc-done);
+}
+.event--notification .event-glyph,
+.event--stop-failure .event-glyph {
+  color: var(--cc-waiting);
+}
+
+/* ------------------------------------------------------------------ rooms (hook overlays) */
+
+.room--ending {
+  opacity: 0.5;
+  transition: opacity 1.2s ease-out;
+}
+
+/* ------------------------------------------------------------------ ambient building windows */
+
+/* ------------------------------------------------------------------ characters: subagents, bubble, sparkle */
+.char--sub .torso {
+  stroke: color-mix(in srgb, var(--cc-fg) 50%, transparent);
+  stroke-width: 0.8;
+}
+.walker.is-walking .legs {
+  animation: cc-step 0.32s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+}
+@keyframes cc-step {
+  0%,
+  100% {
+    transform: skewX(0deg);
+  }
+  50% {
+    transform: skewX(14deg);
+  }
+}
+.bubble path {
+  fill: var(--cc-bg);
+  stroke: var(--cc-waiting);
+  stroke-width: 1.5;
+}
+.bubble text {
+  fill: var(--cc-waiting);
+  font-size: 10px;
+  font-weight: 800;
+}
+.bubble-inner {
+  transform-box: fill-box;
+  transform-origin: 30% 100%;
+  animation: cc-pop 1.1s ease-in-out infinite;
+}
+.sparkle {
+  pointer-events: none;
+}
+.sparkle path,
+.sparkle circle {
+  fill: var(--cc-done);
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: cc-sparkle 1.6s ease-out forwards;
+}
+@keyframes cc-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.15) rotate(25deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9) rotate(60deg);
+  }
+}
+.char.is-leaving {
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ day / night tint (static) */
+.city-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: transparent;
+}
+.tint-dawn .city-map::after {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--vscode-charts-orange, #d18616) 9%, transparent), transparent 55%);
+}
+.tint-day .city-map::after {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--vscode-charts-blue, #3794ff) 6%, transparent), transparent 50%);
+}
+.tint-dusk .city-map::after {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--vscode-charts-purple, #b180d7) 12%, transparent), transparent 60%);
+}
+.tint-night .city-map::after {
+  background: linear-gradient(to bottom, color-mix(in srgb, #000 22%, transparent), color-mix(in srgb, #000 6%, transparent));
+}
+
+/* ------------------------------------------------------------------ high contrast: borders, no glows */
+body.vscode-high-contrast .glass,
+body.vscode-high-contrast-light .glass {
+  box-shadow: none;
+  backdrop-filter: none;
+  border-color: var(--vscode-contrastBorder);
+}
+body.vscode-high-contrast .hud-logo,
+body.vscode-high-contrast-light .hud-logo,
+body.vscode-high-contrast .live-dot,
+body.vscode-high-contrast-light .live-dot {
+  text-shadow: none;
+  box-shadow: none;
+}
+body.vscode-high-contrast .city-map::after,
+body.vscode-high-contrast-light .city-map::after {
+  display: none;
+}
+body.vscode-high-contrast .chip,
+body.vscode-high-contrast-light .chip,
+body.vscode-high-contrast .attention-button,
+body.vscode-high-contrast-light .attention-button,
+body.vscode-high-contrast .zoom-controls,
+body.vscode-high-contrast-light .zoom-controls {
+  border-color: var(--vscode-contrastBorder);
+}
+body.vscode-high-contrast .chip.is-on,
+body.vscode-high-contrast-light .chip.is-on {
+  outline: 1px solid var(--vscode-contrastActiveBorder);
+}
+
+/* Reduced motion for the new rules: static indicators only. Walking is skipped in JS (WAAPI). */
+@media (prefers-reduced-motion: reduce) {
+  .attention-button,
+.bubble-inner,
+.sparkle path,
+.sparkle circle,
+.spinner,
+.walker.is-walking .legs {
+    animation: none !important;
+  }
+  .room--ending {
+    transition: none !important;
+  }
+}
+body.vscode-reduce-motion .attention-button,
+body.vscode-reduce-motion .bubble-inner,
+body.vscode-reduce-motion .sparkle path,
+body.vscode-reduce-motion .sparkle circle,
+body.vscode-reduce-motion .spinner,
+body.vscode-reduce-motion .walker.is-walking .legs {
+  animation: none !important;
+}
+
+.secondary-button.wide {
+  width: 100%;
+  flex: 0 0 auto;
+}
