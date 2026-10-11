@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b0a6b"/>
+      <stop offset="1" stop-color="#0b0f2e"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff35c"/>
+      <stop offset="1" stop-color="#ff7a00"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="26" fill="url(#bg)"/>
+  <!-- four workspace tiles -->
+  <rect x="14" y="14" width="40" height="40" rx="10" fill="#ff2e93"/>
+  <rect x="74" y="14" width="40" height="40" rx="10" fill="#00e5ff"/>
+  <rect x="14" y="74" width="40" height="40" rx="10" fill="#7dff2e"/>
+  <rect x="74" y="74" width="40" height="40" rx="10" fill="#ffd400"/>
+  <!-- tile window bars -->
+  <g fill="#0b0f2e" opacity=".55">
+    <rect x="21" y="21" width="26" height="5" rx="2.5"/>
+    <rect x="81" y="21" width="26" height="5" rx="2.5"/>
+    <rect x="21" y="81" width="26" height="5" rx="2.5"/>
+    <rect x="81" y="81" width="26" height="5" rx="2.5"/>
+  </g>
+  <!-- agent core -->
+  <circle cx="64" cy="64" r="21" fill="#0b0f2e"/>
+  <circle cx="64" cy="64" r="17" fill="url(#core)"/>
+  <!-- agent face -->
+  <rect x="55" y="58" width="6" height="9" rx="3" fill="#0b0f2e"/>
+  <rect x="67" y="58" width="6" height="9" rx="3" fill="#0b0f2e"/>
+  <path d="M57 72q7 5 14 0" fill="none" stroke="#0b0f2e" stroke-width="3" stroke-linecap="round"/>
+</svg>
