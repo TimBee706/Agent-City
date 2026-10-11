@@ -16,6 +16,8 @@ export interface LocatorEnv {
   env: Record<string, string | undefined>;
   homedir: string;
   isFile(p: string): boolean;
+  /** Directory entries; optional so callers/tests without file system access can omit it. */
+  listDir?(p: string): string[];
 }
 
 export const defaultLocatorEnv = (): LocatorEnv => ({
@@ -29,7 +31,41 @@ export const defaultLocatorEnv = (): LocatorEnv => ({
       return false;
     }
   },
+  listDir: (p) => {
+    try {
+      return fs.readdirSync(p);
+    } catch {
+      return [];
+    }
+  },
 });
+
+/** Compares dotted version suffixes numerically, newest first (2.1.296 before 2.1.288). */
+function compareVersionsDesc(a: string, b: string): number {
+  const na = a.match(/\d+/g)?.map(Number) ?? [];
+  const nb = b.match(/\d+/g)?.map(Number) ?? [];
+  for (let i = 0; i < Math.max(na.length, nb.length); i++) {
+    const d = (nb[i] ?? 0) - (na[i] ?? 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
+/** Native binaries bundled with the Claude Code VS Code extension, newest version first. */
+function vscodeExtensionBinaries(p: typeof path.posix, envIn: LocatorEnv): string[] {
+  const { platform, homedir, listDir } = envIn;
+  if (!listDir) return [];
+  const exeName = platform === 'win32' ? 'claude.exe' : 'claude';
+  const out: string[] = [];
+  for (const root of ['.vscode', '.vscode-insiders', '.vscode-server', '.cursor', '.windsurf']) {
+    const extDir = p.join(homedir, root, 'extensions');
+    const matches = listDir(extDir)
+      .filter((n) => /^anthropic\.claude-code-/i.test(n))
+      .sort(compareVersionsDesc);
+    for (const m of matches) out.push(p.join(extDir, m, 'resources', 'native-binary', exeName));
+  }
+  return out;
+}
 
 /** Characters that would be interpreted by cmd.exe; such paths are refused in shell mode. */
 const CMD_META = /["&|<>^%!\r\n]/;
@@ -47,6 +83,7 @@ function needsShell(p: string, platform: NodeJS.Platform): boolean {
  * 1. `claudeCity.claudePath` setting (must be an existing file)
  * 2. PATH (on Windows: claude.exe, claude.cmd, claude.bat per directory)
  * 3. Well-known install locations (~/.local/bin, %APPDATA%/npm, ~/.claude/local)
+ * 4. Binary bundled with the Claude Code VS Code extension (newest version)
  */
 export function locateClaude(override: string | undefined, envIn: LocatorEnv = defaultLocatorEnv()): LocateResult {
   const { platform, env, homedir, isFile } = envIn;
@@ -84,6 +121,10 @@ export function locateClaude(override: string | undefined, envIn: LocatorEnv = d
       const found = accept(p.join(dir, name));
       if (found) return found;
     }
+  }
+  for (const candidate of vscodeExtensionBinaries(p, envIn)) {
+    const found = accept(candidate);
+    if (found) return found;
   }
   return { kind: 'notFound', reason: 'claude executable not found on PATH (set claudeCity.claudePath)' };
 }

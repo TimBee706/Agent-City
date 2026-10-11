@@ -25,6 +25,22 @@ describe('locateClaude', () => {
     expect(locateClaude(undefined, env(['C:\\npm\\claude.cmd']))).toMatchObject({ exe: { path: 'C:\\npm\\claude.cmd', needsShell: true } });
   });
 
+  it('falls back to the newest binary bundled with the Claude Code VS Code extension', () => {
+    const ext = 'C:\\Users\\me\\.vscode\\extensions';
+    const bin = (v: string) => `${ext}\\anthropic.claude-code-${v}-win32-x64\\resources\\native-binary\\claude.exe`;
+    const r = locateClaude(
+      undefined,
+      env([bin('2.1.288'), bin('2.1.296')], {
+        env: { PATH: '' },
+        listDir: (p) =>
+          p.toLowerCase() === ext.toLowerCase()
+            ? ['anthropic.claude-code-2.1.288-win32-x64', 'anthropic.claude-code-2.1.296-win32-x64', 'other.ext-1.0.0']
+            : [],
+      }),
+    );
+    expect(r).toMatchObject({ kind: 'found', exe: { path: bin('2.1.296'), needsShell: false } });
+  });
+
   it('falls back to ~/.local/bin', () => {
     const r = locateClaude(undefined, env(['C:\\Users\\me\\.local\\bin\\claude.exe'], { env: { PATH: '' } }));
     expect(r).toMatchObject({ kind: 'found', exe: { path: 'C:\\Users\\me\\.local\\bin\\claude.exe' } });
