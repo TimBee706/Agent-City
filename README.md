@@ -226,7 +226,7 @@ npm install
 npm run compile          # typecheck (extension + webview) + esbuild bundles
 npm test                 # vitest unit tests
 npm run test:integration # VS Code smoke test (downloads VS Code)
-npm run package          # builds claude-city.vsix
+npm run package          # builds agent-city.vsix
 ```
 
 See [docs/RELEASING.md](docs/RELEASING.md) for the release checklist and [CHANGELOG.md](CHANGELOG.md) for changes.
