@@ -229,6 +229,8 @@ npm run test:integration # VS Code smoke test (downloads VS Code)
 npm run package          # builds claude-city.vsix
 ```
 
+See [docs/RELEASING.md](docs/RELEASING.md) for the release checklist and [CHANGELOG.md](CHANGELOG.md) for changes.
+
 Press `F5` in VS Code to launch an Extension Development Host. To try live events without touching your real settings, install the
 hooks into the workspace's `.claude/settings.local.json` of a scratch folder and start `claude` there.
 

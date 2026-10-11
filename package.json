@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://example.invalid/claude-city.git"
+    "url": "https://github.com/TimBee706/Agent-City.git"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -238,7 +238,7 @@
     "test:watch": "vitest",
     "pretest:integration": "npm run compile && tsc -p tsconfig.integration.json",
     "test:integration": "node ./out/test/integration/runTest.js",
-    "package": "vsce package --out claude-city.vsix --baseContentUrl https://example.invalid/claude-city/blob/HEAD --baseImagesUrl https://example.invalid/claude-city/raw/HEAD"
+    "package": "vsce package --out claude-city.vsix"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -259,5 +259,15 @@
   "galleryBanner": {
     "color": "#1e1b2e",
     "theme": "dark"
+  },
+  "homepage": "https://github.com/TimBee706/Agent-City#readme",
+  "bugs": {
+    "url": "https://github.com/TimBee706/Agent-City/issues"
+  },
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Claude City reads local Claude Code data (~/.claude) and needs a real file system."
+    }
   }
 }
