@@ -1,9 +1,9 @@
 {
-  "name": "claude-city",
-  "displayName": "Claude City",
+  "name": "agent-city",
+  "displayName": "Agent City - Workspace and Agent Session Manager",
   "description": "A living city visualization of your local Claude Code sessions and agents.",
   "version": "0.1.0",
-  "publisher": "local",
+  "publisher": "TimoBeermann",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -238,7 +238,7 @@
     "test:watch": "vitest",
     "pretest:integration": "npm run compile && tsc -p tsconfig.integration.json",
     "test:integration": "node ./out/test/integration/runTest.js",
-    "package": "vsce package --out claude-city.vsix"
+    "package": "vsce package --out agent-city.vsix"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
