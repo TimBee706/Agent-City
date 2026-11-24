@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { Agent } from '../models/Agent';
 import type { HistorySummary } from '../models/CityState';
 import type { Session } from '../models/Session';
@@ -9,7 +9,7 @@ import { BI, InteriorBox, InteriorRoom, interiorFor } from './buildingInterior';
 import type { FocusRequest } from './CityMap';
 import { paletteFor } from './facade';
 import { PHASE_GLYPH, PHASE_LABEL, truncate } from './format';
-import { prefersReducedMotion, useIsoLayoutEffect } from './motion';
+import { prefersReducedMotion, useIsoLayoutEffect, useReducedMotion } from './motion';
 import { Select, Selection, activatable } from './selection';
 import { Deco } from './sprites';
 import { usePanZoom } from './usePanZoom';
@@ -58,6 +58,7 @@ function RoomViewImpl({ room, session, agents, selectedId, sparkleKey, onSelect 
       }${agents.length > 1 ? `, ${agents.length} agents` : ''}`;
   const cx = room.x + room.width / 2;
   const floorY = room.y + room.height - 10;
+  const lampX = Math.round(room.x + room.width * 0.4);
   return (
     <g
       className={`iroom iroom--${phase}${selected ? ' is-selected' : ''}${session.attention ? ' iroom--attention' : ''}`}
@@ -67,10 +68,23 @@ function RoomViewImpl({ room, session, agents, selectedId, sparkleKey, onSelect 
       <title>{label}</title>
       <rect className="iroom-bg" x={room.x} y={room.y} width={room.width} height={room.height} />
       <rect className="iroom-light" x={room.x} y={room.y} width={room.width} height={room.height} />
+      <rect className="iroom-shade" x={room.x} y={room.y} width={room.width} height={room.height} />
+      <g className="iroom-lamp" aria-hidden="true">
+        <polygon className="lamp-cone" points={`${lampX - 7},${room.y + 15} ${lampX + 7},${room.y + 15} ${lampX + 46},${floorY} ${lampX - 46},${floorY}`} />
+        <line x1={lampX} y1={room.y} x2={lampX} y2={room.y + 9} />
+        <path className="lamp-shade" d={`M${lampX - 8} ${room.y + 15} L${lampX - 4} ${room.y + 8} H${lampX + 4} L${lampX + 8} ${room.y + 15} Z`} />
+      </g>
       <rect className="iroom-floor" x={room.x} y={floorY} width={room.width} height={10} />
+      <line className="iroom-skirting" x1={room.x} y1={floorY} x2={room.x + room.width} y2={floorY} />
       <g className="iroom-window" aria-hidden="true">
         <rect x={room.x + room.width - 54} y={room.y + 26} width={40} height={30} rx={2} />
         <line x1={room.x + room.width - 34} y1={room.y + 26} x2={room.x + room.width - 34} y2={room.y + 56} />
+        <line x1={room.x + room.width - 54} y1={room.y + 41} x2={room.x + room.width - 14} y2={room.y + 41} />
+        <rect className="iroom-sill" x={room.x + room.width - 57} y={room.y + 56} width={46} height={3} rx={1} />
+      </g>
+      <g className="iroom-plant" aria-hidden="true">
+        <path className="plant-leaves" d={`M${room.x + room.width - 16} ${floorY - 9} q-9 -5 -7 -15 q5 4 7 15 q1 -12 8 -16 q3 9 -8 16 z`} />
+        <rect className="plant-pot" x={room.x + room.width - 21} y={floorY - 9} width={10} height={9} rx={2} />
       </g>
       <rect className="focus-ring" x={room.x - 3} y={room.y - 3} width={room.width + 6} height={room.height + 6} rx={4} />
       <text className="iroom-label" x={room.x + 8} y={room.y + 16}>
@@ -237,6 +251,27 @@ function BuildingViewImpl(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusRequest?.nonce]);
 
+  // the elevator cabin travels between the lobby and the top floor (compositor-only; none with reduced motion)
+  const cabinRef = useRef<SVGGElement>(null);
+  const reducedMotion = useReducedMotion();
+  const travel = layout.rooms.length ? Math.round(layout.lobby.y - Math.min(...layout.rooms.map((r) => r.y))) : 0;
+  useEffect(() => {
+    const el = cabinRef.current;
+    if (!el || !travel || reducedMotion || typeof el.animate !== 'function') return undefined;
+    const up = `translateY(${-travel}px)`;
+    const a = el.animate(
+      [
+        { transform: 'translateY(0px)', offset: 0, easing: 'ease-in-out' },
+        { transform: 'translateY(0px)', offset: 0.3, easing: 'ease-in-out' },
+        { transform: up, offset: 0.5, easing: 'ease-in-out' },
+        { transform: up, offset: 0.8, easing: 'ease-in-out' },
+        { transform: 'translateY(0px)', offset: 1 },
+      ],
+      { duration: 9000 + travel * 30, iterations: Infinity },
+    );
+    return () => a.cancel();
+  }, [travel, reducedMotion]);
+
   const [hoverBox, setHoverBox] = useState<string | undefined>();
   const hovered = hoverBox ? layout.basement.boxes.find((b) => b.id === hoverBox) : undefined;
 
@@ -295,20 +330,16 @@ function BuildingViewImpl(props: Props) {
         </button>
       </nav>
       <svg className={`building-svg pal-${pal}`} width="100%" height="100%" role="group" aria-label={`Inside ${workspace.name}`}>
-        <defs>
-          <linearGradient id="cc-sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" className="sky-top" />
-            <stop offset="1" className="sky-bottom" />
-          </linearGradient>
-          <pattern id="cc-brick" width="24" height="12" patternUnits="userSpaceOnUse">
-            <rect className="brick-bg" x={0} y={0} width={24} height={12} />
-            <path className="brick-line" d="M0 0.5 H24 M0 6.5 H24 M12 0.5 V6.5 M0 6.5 V12 M24 6.5 V12" />
-          </pattern>
-        </defs>
         <g ref={pz.gRef} className="building-viewport">
           <rect className="bv-sky" x={0} y={0} width={layout.width} height={layout.groundY} />
+          <g className="bv-scenery" aria-hidden="true">
+            <circle className="bv-orb" cx={layout.width - 70} cy={46} r={20} />
+            <path className="bv-cloud" d="M40 60 a14 14 0 0 1 26 -6 a18 18 0 0 1 34 4 a11 11 0 0 1 6 21 h-64 a11 11 0 0 1 -2 -19 z" />
+            <path className="bv-cloud bv-cloud--b" d={`M${layout.width - 230} 96 a11 11 0 0 1 20 -5 a14 14 0 0 1 27 3 a9 9 0 0 1 5 17 h-51 a9 9 0 0 1 -1 -15 z`} />
+          </g>
           <rect className="bv-earth" x={0} y={layout.groundY} width={layout.width} height={layout.height - layout.groundY} />
-          <rect className="bv-grass" x={0} y={layout.groundY - 2} width={layout.width} height={8} />
+          <rect className="bv-grass" x={0} y={layout.groundY - 2} width={layout.width} height={8} rx={2} />
+          <path className="bv-pebbles" d={`M${B.x - 60} ${layout.groundY + 40} h14 M${B.x - 30} ${layout.groundY + 90} h20 M${B.x + B.width + 26} ${layout.groundY + 60} h16 M${B.x + B.width + 50} ${layout.groundY + 120} h12`} />
           <g aria-hidden="true">
             <Deco d={treeL} at={{ x: BI.SIDE / 2 - 8, y: layout.groundY }} />
             <Deco d={lamp} at={{ x: BI.SIDE - 18, y: layout.groundY }} />
@@ -317,6 +348,12 @@ function BuildingViewImpl(props: Props) {
           {/* basement */}
           <g className="basement">
             <rect className="basement-bg" x={K.x} y={K.y} width={K.width} height={K.height} />
+            <rect className="basement-shade" x={K.x} y={K.y} width={K.width} height={K.height} />
+            <g className="basement-bulb" aria-hidden="true">
+              <line x1={K.x + K.width - 60} y1={K.y} x2={K.x + K.width - 60} y2={K.y + 14} />
+              <circle className="bulb-glow" cx={K.x + K.width - 60} cy={K.y + 18} r={34} />
+              <circle className="bulb" cx={K.x + K.width - 60} cy={K.y + 18} r={4} />
+            </g>
             <text className="basement-title" x={K.x + BI.WALL + BI.ELEV_W + BI.GAP + 6} y={K.y + 20}>
               Basement · {K.total} archived session{K.total === 1 ? '' : 's'}
             </text>
@@ -359,7 +396,19 @@ function BuildingViewImpl(props: Props) {
             )}
           </g>
           {/* building shell */}
+          <rect className="bv-chimney" x={roof.x + roof.width - 110} y={roof.y - 6} width={22} height={34} rx={2} />
           <polygon className="bv-roof" points={roofPts} />
+          <path
+            className="bv-shingles"
+            d={[0.3, 0.55, 0.8]
+              .map((t) => {
+                const y = roof.y + 8 + (roof.height - 8) * t;
+                const inset = 40 * (1 - t);
+                return `M${Math.round(roof.x + inset)} ${Math.round(y)}H${Math.round(roof.x + roof.width - inset)}`;
+              })
+              .join('')}
+          />
+          <rect className="bv-eaves" x={B.x - 4} y={B.y} width={B.width + 8} height={5} />
           <text className="bv-roof-name" x={roof.x + roof.width / 2} y={roof.y + roof.height / 2 + 9} textAnchor="middle">
             {truncate(workspace.name, 32)}
           </text>
@@ -372,7 +421,11 @@ function BuildingViewImpl(props: Props) {
           <g className="elevator" aria-hidden="true">
             <rect className="elevator-shaft" x={E.x} y={E.y} width={E.width} height={E.height} />
             <line className="elevator-cable" x1={E.x + E.width / 2} y1={E.y} x2={E.x + E.width / 2} y2={lobby.y + 14} />
-            <rect className="elevator-cabin" x={E.x + 5} y={lobby.y + 14} width={E.width - 10} height={lobby.height - 22} rx={2} />
+            <g ref={cabinRef} className="elevator-car">
+              <rect className="elevator-cabin" x={E.x + 5} y={lobby.y + 14} width={E.width - 10} height={lobby.height - 22} rx={3} />
+              <rect className="elevator-window" x={E.x + 11} y={lobby.y + 22} width={E.width - 22} height={18} rx={2} />
+              <line className="elevator-split" x1={E.x + E.width / 2} y1={lobby.y + 44} x2={E.x + E.width / 2} y2={lobby.y + lobby.height - 8} />
+            </g>
             {layout.rooms
               .filter((r) => r.col === 0)
               .map((r) => (
@@ -386,10 +439,14 @@ function BuildingViewImpl(props: Props) {
             <text className="lobby-sign" x={lobby.x + 10} y={lobby.y + 18}>
               Lobby · {truncate(workspace.name, 28)}
             </text>
+            <rect className="lobby-rug" x={door.x - 14} y={layout.groundY - 11} width={door.width + 28} height={3} rx={1.5} />
             <rect className="lobby-door" x={door.x} y={door.y} width={door.width} height={door.height - 10} rx={2} />
+            <rect className="lobby-door-pane" x={door.x + 6} y={door.y + 6} width={door.width - 12} height={(door.height - 10) * 0.38} rx={2} />
             <circle className="lobby-knob" cx={door.x + door.width - 8} cy={door.y + door.height / 2} r={2} />
             <g className="reception" aria-hidden="true">
-              <rect x={lobby.x + 30} y={layout.groundY - 34} width={70} height={24} rx={3} />
+              <rect className="sofa-back" x={lobby.x + 30} y={layout.groundY - 44} width={70} height={22} rx={6} />
+              <rect x={lobby.x + 26} y={layout.groundY - 30} width={78} height={20} rx={5} />
+              <path className="plant-leaves" d={`M${lobby.x + 128} ${layout.groundY - 22} q-14 -8 -10 -22 q8 6 10 22 q2 -18 12 -24 q4 14 -12 24 z`} />
               <circle className="plant-pot" cx={lobby.x + 128} cy={layout.groundY - 16} r={6} />
               <circle className="plant" cx={lobby.x + 128} cy={layout.groundY - 30} r={10} />
             </g>
@@ -457,7 +514,7 @@ function BuildingViewImpl(props: Props) {
         <button className="icon-button" aria-label="Zoom out" title="Zoom out (−)" onClick={() => zoomCenter(1 / ZOOM_STEP)}>
           −
         </button>
-        <button className="icon-button" aria-label="Fit whole building" title="Fit whole building (0)" onClick={fitAll}>
+        <button className="icon-button" aria-label="Fit whole building" title="Fit whole building (0)" onClick={() => fitAll({ animate: true })}>
           ⤢
         </button>
       </div>

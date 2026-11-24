@@ -21,7 +21,11 @@ export interface EventsMessage {
 export interface FitCityMessage {
   type: 'fitCity';
 }
-export type ExtensionToWebviewMessage = StateMessage | EventsMessage | FitCityMessage;
+/** Asks the city panel to fly to the next building that needs attention (waiting, then failed, then working). */
+export interface FocusAttentionMessage {
+  type: 'focusAttention';
+}
+export type ExtensionToWebviewMessage = StateMessage | EventsMessage | FitCityMessage | FocusAttentionMessage;
 
 // ---------------------------------------------------------------- webview -> extension
 export interface ReadyMessage {
@@ -159,5 +163,6 @@ export function parseExtensionMessage(raw: unknown): ExtensionToWebviewMessage |
     return raw as unknown as EventsMessage;
   }
   if (raw.type === 'fitCity') return { type: 'fitCity' };
+  if (raw.type === 'focusAttention') return { type: 'focusAttention' };
   return undefined;
 }

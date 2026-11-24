@@ -17,7 +17,7 @@
   border: 1px solid var(--cc-glass-border);
 }
 
-.building-view {
+.map-area {
   --bv-room: #fdf6e3;
   --bv-resting: #e6ebf3;
   --bv-floor: #c8a27a;
@@ -25,6 +25,8 @@
   --bv-lobby: #f6efe0;
   --bv-earth: #7a5536;
   --bv-text: #2d2a26;
+}
+.building-view {
   position: relative;
   flex: 1;
   min-width: 0;
@@ -35,8 +37,8 @@
   border: 1px solid var(--cc-glass-border);
   background: #dff3ff;
 }
-body.vscode-dark .building-view,
-body.vscode-high-contrast .building-view {
+body.vscode-dark .map-area,
+body.vscode-high-contrast .map-area {
   --bv-room: #2b2e36;
   --bv-resting: #252a34;
   --bv-floor: #5a4632;
@@ -44,6 +46,9 @@ body.vscode-high-contrast .building-view {
   --bv-lobby: #2a2c31;
   --bv-earth: #3f2d1f;
   --bv-text: #e8e6e3;
+}
+body.vscode-dark .building-view,
+body.vscode-high-contrast .building-view {
   background: #1d2b3f;
 }
 .building-view.is-panning {
@@ -458,4 +463,305 @@ body.vscode-high-contrast-light .basement-bg {
 .iroom .resting-z {
   fill: #3b82f6;
   font-weight: 800;
+}
+
+/* ================================================================== v0.2 look: soft light, depth, detail */
+.city-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.gs-earth-a {
+  stop-color: color-mix(in srgb, var(--bv-earth, #7a5536) 88%, #fff);
+}
+.gs-earth-b {
+  stop-color: color-mix(in srgb, var(--bv-earth, #7a5536) 70%, #000);
+}
+.gs-floor-a {
+  stop-color: color-mix(in srgb, var(--bv-floor, #c8a27a) 85%, #fff);
+}
+.gs-floor-b {
+  stop-color: color-mix(in srgb, var(--bv-floor, #c8a27a) 80%, #000);
+}
+.gs-room-a {
+  stop-color: #fff;
+  stop-opacity: 0.1;
+}
+.gs-room-b {
+  stop-color: #000;
+  stop-opacity: 0.1;
+}
+.gs-glass-a {
+  stop-color: #8fd0ff;
+}
+.gs-glass-b {
+  stop-color: #e4f5ff;
+}
+.tint-night .gs-glass-a {
+  stop-color: #131d3a;
+}
+.tint-night .gs-glass-b {
+  stop-color: #2c4470;
+}
+.tint-dusk .gs-glass-a {
+  stop-color: #7a67b8;
+}
+.tint-dusk .gs-glass-b {
+  stop-color: #f6b08c;
+}
+.gs-cone-a {
+  stop-color: #fff6d0;
+  stop-opacity: 0.32;
+}
+.gs-cone-b {
+  stop-color: #fff6d0;
+  stop-opacity: 0;
+}
+.gs-conew-a {
+  stop-color: #ffd257;
+  stop-opacity: 0.5;
+}
+.gs-conew-b {
+  stop-color: #ffd257;
+  stop-opacity: 0;
+}
+.gs-dark-a {
+  stop-color: #000;
+  stop-opacity: 0.05;
+}
+.gs-dark-b {
+  stop-color: #000;
+  stop-opacity: 0.38;
+}
+.gs-cabin-a {
+  stop-color: #ffdb6e;
+}
+.gs-cabin-b {
+  stop-color: #e2a92a;
+}
+.gs-wood-a {
+  stop-color: #8a5327;
+}
+.gs-wood-b {
+  stop-color: #5e3716;
+}
+
+.bv-earth {
+  fill: url(#cc-bv-earth);
+}
+.bv-grass {
+  fill: #6cc24a;
+}
+.bv-pebbles {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.bv-orb {
+  fill: #ffe27a;
+  opacity: 0.95;
+}
+.tint-night .bv-orb {
+  fill: #e6ecff;
+}
+.tint-dusk .bv-orb,
+.tint-dawn .bv-orb {
+  fill: #ffb27a;
+}
+.bv-cloud {
+  fill: #fff;
+  opacity: 0.8;
+  animation: cc-bv-cloud 60s ease-in-out infinite alternate;
+}
+.bv-cloud--b {
+  opacity: 0.6;
+  animation-duration: 85s;
+  animation-direction: alternate-reverse;
+}
+body.vscode-dark .bv-cloud,
+.tint-night .bv-cloud {
+  fill: #6f86ab;
+  opacity: 0.55;
+}
+@keyframes cc-bv-cloud {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(60px);
+  }
+}
+.bv-roof {
+  fill: var(--roof-f, var(--roof));
+  stroke: rgba(24, 20, 44, 0.3);
+  stroke-linejoin: round;
+}
+.bv-shingles {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.16);
+  stroke-width: 1.2;
+}
+.bv-chimney {
+  fill: #a85d1f;
+  stroke: rgba(24, 20, 44, 0.3);
+}
+.bv-eaves {
+  fill: rgba(0, 0, 0, 0.16);
+}
+.bv-frame {
+  fill: var(--wall-l, var(--wall));
+  stroke: rgba(24, 20, 44, 0.28);
+}
+.iroom-shade {
+  fill: url(#cc-bv-room);
+  pointer-events: none;
+}
+.iroom-floor {
+  fill: url(#cc-bv-floor);
+}
+.iroom-skirting {
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 1;
+}
+.iroom-window rect {
+  fill: url(#cc-bv-glass);
+  stroke: #fff;
+  stroke-width: 2;
+}
+.iroom-window line {
+  stroke: #fff;
+  stroke-width: 1.6;
+}
+.iroom-window .iroom-sill {
+  fill: #fff;
+  stroke: rgba(0, 0, 0, 0.15);
+  stroke-width: 0.6;
+}
+body.vscode-dark .iroom-window rect,
+body.vscode-dark .iroom-window line {
+  stroke: #9aa3b5;
+}
+body.vscode-dark .iroom-window .iroom-sill {
+  fill: #9aa3b5;
+}
+.iroom-lamp line {
+  stroke: #6b7280;
+  stroke-width: 1.2;
+}
+.lamp-shade {
+  fill: #4b5563;
+}
+.lamp-cone {
+  fill: url(#cc-bv-cone);
+  pointer-events: none;
+}
+.iroom--working .lamp-cone,
+.iroom--waiting .lamp-cone {
+  fill: url(#cc-bv-cone-warm);
+}
+.iroom--working .lamp-shade,
+.iroom--waiting .lamp-shade,
+.iroom--idle .lamp-shade {
+  fill: #f2c94c;
+}
+.iroom--resting .lamp-cone,
+.iroom--stopped .lamp-cone {
+  display: none;
+}
+.iroom-plant .plant-leaves,
+.reception .plant-leaves {
+  fill: #3fa34d;
+}
+.iroom-plant .plant-pot {
+  fill: #c2410c;
+}
+.elevator-shaft {
+  fill: url(#cc-bv-dark);
+  stroke: rgba(24, 20, 44, 0.25);
+}
+.elevator-cabin {
+  fill: url(#cc-bv-cabin);
+  stroke: rgba(24, 20, 44, 0.35);
+}
+.elevator-window {
+  fill: url(#cc-bv-glass);
+  stroke: rgba(24, 20, 44, 0.3);
+}
+.elevator-split {
+  stroke: rgba(24, 20, 44, 0.35);
+  stroke-width: 1.2;
+}
+.lobby-door {
+  fill: url(#cc-bv-wood);
+  stroke: rgba(24, 20, 44, 0.35);
+}
+.lobby-door-pane {
+  fill: url(#cc-bv-glass);
+  opacity: 0.85;
+}
+.lobby-rug {
+  fill: #c0392b;
+  opacity: 0.8;
+}
+.reception rect {
+  fill: #a8693a;
+}
+.reception .sofa-back {
+  fill: #8b5a2b;
+}
+.basement-shade {
+  fill: url(#cc-bv-dark);
+  pointer-events: none;
+}
+.basement-bulb line {
+  stroke: #9ca3af;
+  stroke-width: 1.2;
+}
+.basement-bulb .bulb {
+  fill: #fff3b0;
+}
+.basement-bulb .bulb-glow {
+  fill: url(#cc-glow);
+  opacity: 0.55;
+}
+.abox-body {
+  stroke: rgba(60, 40, 20, 0.5);
+}
+.abox {
+  transition: transform 0.15s ease-out;
+}
+.abox:hover {
+  transform: translateY(-2px);
+}
+.elevator-car {
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bv-cloud {
+    animation: none !important;
+  }
+  .abox {
+    transition: none;
+  }
+}
+body.vscode-reduce-motion .bv-cloud {
+  animation: none !important;
+}
+body.vscode-reduce-motion .abox {
+  transition: none;
+}
+body.vscode-high-contrast .bv-scenery,
+body.vscode-high-contrast-light .bv-scenery,
+body.vscode-high-contrast .iroom-shade,
+body.vscode-high-contrast-light .iroom-shade,
+body.vscode-high-contrast .lamp-cone,
+body.vscode-high-contrast-light .lamp-cone,
+body.vscode-high-contrast .basement-shade,
+body.vscode-high-contrast-light .basement-shade,
+body.vscode-high-contrast .bulb-glow,
+body.vscode-high-contrast-light .bulb-glow {
+  display: none;
 }

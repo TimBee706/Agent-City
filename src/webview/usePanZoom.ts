@@ -1,5 +1,5 @@
 import { KeyboardEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { useIsoLayoutEffect } from './motion';
+import { prefersReducedMotion, useIsoLayoutEffect } from './motion';
 import {
   PAN_STEP,
   Rect,
@@ -8,6 +8,7 @@ import {
   ZOOM_STEP,
   clampPan,
   fitRect,
+  lerpTransform,
   isValidTransform,
   panBy,
   transformAttr,
@@ -16,6 +17,20 @@ import {
 } from './zoom';
 
 const DRAG_THRESHOLD = 4;
+/** Camera flights (fit, zoom buttons, focus requests) ease over this many ms. */
+export const CAMERA_MS = 420;
+/**
+ * Class of camera layers (layered scenes): elements laid out in world coordinates that get the
+ * camera as a CSS transform. `translate3d` gives each layer its own compositor layer, so panning
+ * only moves textures (no repaint / re-raster of the scene), and - unlike `will-change: transform` -
+ * the browser still re-rasters at the new scale after a zoom, so the picture stays sharp.
+ */
+export const PZ_LAYER = 'pz-layer';
+
+export function cssTransform(t: ViewTransform): string {
+  const r = (n: number) => Math.round(n * 100) / 100;
+  return `translate3d(${r(t.x)}px, ${r(t.y)}px, 0) scale(${Math.round(t.k * 10000) / 10000})`;
+}
 
 /** Element size via ResizeObserver; ignores 0-size reports (element hidden with display: none). */
 export function useElementSize<T extends HTMLElement>(): [React.RefObject<T>, Size] {
@@ -49,9 +64,15 @@ export interface PanZoomOptions {
   fitMaxK?: number;
 }
 
+export interface ApplyOptions {
+  /** Ease to the target instead of jumping (skipped with reduced motion). */
+  animate?: boolean;
+}
+
 /**
  * Ref-based zoom / pan for an SVG viewport: the transform lives in a ref and is written to the
- * viewport group via requestAnimationFrame, so wheel / drag never re-render React.
+ * viewport group (and every `.pz-layer` element inside the surface) via requestAnimationFrame, so
+ * wheel / drag never re-render React. Programmatic moves can ease to their target.
  */
 export function usePanZoom({ content, initial, onChange, onFrame, fitMaxK = 1 }: PanZoomOptions) {
   const [ref, size] = useElementSize<HTMLDivElement>();
@@ -76,54 +97,106 @@ export function usePanZoom({ content, initial, onChange, onFrame, fitMaxK = 1 }:
 
   const write = useCallback(() => {
     gRef.current?.setAttribute('transform', transformAttr(tRef.current));
+    const layers = ref.current?.getElementsByClassName(PZ_LAYER);
+    if (layers?.length) {
+      // CSSOM write (not a style attribute): allowed by the webview's CSP
+      const css = cssTransform(tRef.current);
+      for (let i = 0; i < layers.length; i++) (layers[i] as HTMLElement | SVGElement).style.transform = css;
+    }
     onFrameRef.current?.(tRef.current);
+  }, [ref]);
+
+  const persistSoon = useCallback(() => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => onChangeRef.current(tRef.current), 300);
   }, []);
 
+  /** Running camera flight (cancelled by any direct move). */
+  const flight = useRef<number | undefined>();
+  /** Where the running flight ends: repeated steps (zoom buttons, arrow keys) build on it. */
+  const goal = useRef<ViewTransform | undefined>();
+  const cancelFlight = useCallback(() => {
+    if (flight.current !== undefined) cancelAnimationFrame(flight.current);
+    flight.current = undefined;
+    goal.current = undefined;
+  }, []);
+  /** The camera after the running flight (or the current one). */
+  const aim = useCallback(() => goal.current ?? tRef.current, []);
+
   const apply = useCallback(
-    (t: ViewTransform) => {
-      tRef.current = clampPan(t, contentRef.current, sizeRef.current);
+    (t: ViewTransform, opts?: ApplyOptions) => {
+      const target = clampPan(t, contentRef.current, sizeRef.current);
+      cancelFlight();
+      const canAnimate = opts?.animate && typeof requestAnimationFrame === 'function' && typeof performance !== 'undefined' && !prefersReducedMotion();
+      if (canAnimate) {
+        const from = tRef.current;
+        const start = performance.now();
+        goal.current = target;
+        const step = (now: number) => {
+          const u = Math.min(1, (now - start) / CAMERA_MS);
+          tRef.current = lerpTransform(from, target, u, sizeRef.current);
+          write();
+          flight.current = u < 1 ? requestAnimationFrame(step) : undefined;
+          if (u >= 1) goal.current = undefined;
+        };
+        flight.current = requestAnimationFrame(step);
+        // the target is what gets persisted, even if the flight is interrupted by an unmount
+        if (persistTimer.current) clearTimeout(persistTimer.current);
+        persistTimer.current = setTimeout(() => onChangeRef.current(flight.current === undefined ? tRef.current : target), CAMERA_MS + 300);
+        return;
+      }
+      tRef.current = target;
       if (raf.current === undefined && typeof requestAnimationFrame === 'function') {
         raf.current = requestAnimationFrame(() => {
           raf.current = undefined;
           write();
         });
       }
-      if (persistTimer.current) clearTimeout(persistTimer.current);
-      persistTimer.current = setTimeout(() => onChangeRef.current(tRef.current), 300);
+      persistSoon();
     },
-    [write],
+    [write, cancelFlight, persistSoon],
   );
 
   useEffect(
     () => () => {
       if (raf.current !== undefined) cancelAnimationFrame(raf.current);
+      if (flight.current !== undefined) cancelAnimationFrame(flight.current);
       if (persistTimer.current) clearTimeout(persistTimer.current);
     },
     [],
   );
 
   const fitAll = useCallback(
-    () => apply(fitRect({ x: 0, y: 0, ...contentRef.current }, sizeRef.current, 16, fitMaxK)),
+    (opts?: ApplyOptions) => apply(fitRect({ x: 0, y: 0, ...contentRef.current }, sizeRef.current, 16, fitMaxK), opts),
     [apply, fitMaxK],
   );
   const zoomToRect = useCallback(
     (r: Rect, maxK: number) => {
       autoFit.current = false;
-      apply(fitRect(r, sizeRef.current, 32, maxK));
+      apply(fitRect(r, sizeRef.current, 32, maxK), { animate: true });
     },
     [apply],
+  );
+  /** Centres a world point (keeping the zoom). */
+  const centerOn = useCallback(
+    (wx: number, wy: number, opts?: ApplyOptions) => {
+      autoFit.current = false;
+      const t = aim();
+      apply({ k: t.k, x: sizeRef.current.width / 2 - wx * t.k, y: sizeRef.current.height / 2 - wy * t.k }, opts);
+    },
+    [apply, aim],
   );
   const zoomCenter = useCallback(
     (factor: number) => {
       autoFit.current = false;
-      apply(zoomAt(tRef.current, factor, sizeRef.current.width / 2, sizeRef.current.height / 2));
+      apply(zoomAt(aim(), factor, sizeRef.current.width / 2, sizeRef.current.height / 2), { animate: true });
     },
-    [apply],
+    [apply, aim],
   );
   /** Pans (keeping the zoom) so that a world rect is visible with some margin. */
   const ensureVisible = useCallback(
     (r: Rect, margin = 40) => {
-      const t = tRef.current;
+      const t = aim();
       const s = sizeRef.current;
       const x0 = r.x * t.k + t.x;
       const y0 = r.y * t.k + t.y;
@@ -135,9 +208,9 @@ export function usePanZoom({ content, initial, onChange, onFrame, fitMaxK = 1 }:
       else if (x1 > s.width - margin) dx = s.width - margin - x1;
       if (y0 < margin) dy = margin - y0;
       else if (y1 > s.height - margin) dy = s.height - margin - y1;
-      if (dx || dy) apply(panBy(t, dx, dy));
+      if (dx || dy) apply(panBy(t, dx, dy), { animate: true });
     },
-    [apply],
+    [apply, aim],
   );
 
   // First content: fit (unless a persisted transform exists); otherwise just (re)write the transform.
@@ -211,19 +284,19 @@ export function usePanZoom({ content, initial, onChange, onFrame, fitMaxK = 1 }:
           zoomCenter(1 / ZOOM_STEP);
           break;
         case '0':
-          fitAll();
+          fitAll({ animate: true });
           break;
         case 'ArrowLeft':
-          apply(panBy(tRef.current, PAN_STEP, 0));
+          apply(panBy(aim(), PAN_STEP, 0), { animate: true });
           break;
         case 'ArrowRight':
-          apply(panBy(tRef.current, -PAN_STEP, 0));
+          apply(panBy(aim(), -PAN_STEP, 0), { animate: true });
           break;
         case 'ArrowUp':
-          apply(panBy(tRef.current, 0, PAN_STEP));
+          apply(panBy(aim(), 0, PAN_STEP), { animate: true });
           break;
         case 'ArrowDown':
-          apply(panBy(tRef.current, 0, -PAN_STEP));
+          apply(panBy(aim(), 0, -PAN_STEP), { animate: true });
           break;
         default:
           return;
@@ -243,5 +316,5 @@ export function usePanZoom({ content, initial, onChange, onFrame, fitMaxK = 1 }:
     drag.current = undefined;
   }
 
-  return { ref, gRef, size, tRef, apply, fitAll, zoomToRect, zoomCenter, ensureVisible, handlers };
+  return { ref, gRef, size, tRef, apply, fitAll, zoomToRect, zoomCenter, centerOn, ensureVisible, handlers };
 }

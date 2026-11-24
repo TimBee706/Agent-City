@@ -42,6 +42,7 @@ function readConfig(): ExtensionConfig {
     pollIntervalSeconds: c.get<number>('pollIntervalSeconds', DEFAULT_POLL_SECONDS),
     demoMode: (demo === 'on' || demo === 'off' ? demo : 'auto') as DemoMode,
     dayNight: c.get<boolean>('ambient.dayNight', true) !== false,
+    effects: c.get<boolean>('ambient.effects', true) !== false,
     claudePath: c.get<string>('claudePath', '') ?? '',
     discoverHistoricalProjects: c.get<boolean>('discoverHistoricalProjects', true) !== false,
     historyImport: c.get<boolean>('history.importSessions', true) !== false,
@@ -220,6 +221,10 @@ export function activate(context: vscode.ExtensionContext): ClaudeCityApi {
       return manager.refresh();
     }),
     vscode.commands.registerCommand('claudeCity.toggleDemoData', () => manager.toggleDemo()),
+    vscode.commands.registerCommand('claudeCity.nextAttention', () => {
+      panel.show();
+      sync.requestAttention();
+    }),
     vscode.commands.registerCommand('claudeCity.installHooks', () => hooks.installHooks()),
     vscode.commands.registerCommand('claudeCity.uninstallHooks', () => hooks.uninstallHooks()),
     vscode.commands.registerCommand('claudeCity.importWorkspacesFromFolder', () => workspaceActions.importFromFolder()),

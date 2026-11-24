@@ -113,4 +113,24 @@ describe('StateSynchronizer', () => {
     expect(sync.targetCount).toBe(1);
     sync.dispose();
   });
+
+  it('"next attention" reaches ready webviews at once and a loading panel as soon as it is ready', () => {
+    const sync = new StateSynchronizer(() => emptyCityState('live'), 100, new FakeTimers());
+    const posted: { type: string }[] = [];
+    const target = sync.attach({ post: async (m) => (posted.push(m as { type: string }), true) });
+    sync.requestAttention(); // panel just opened, not ready yet
+    expect(posted).toHaveLength(0);
+    target.markReady();
+    expect(posted.map((m) => m.type)).toEqual(['state', 'focusAttention']);
+    sync.requestAttention();
+    expect(posted.map((m) => m.type)).toEqual(['state', 'focusAttention', 'focusAttention']);
+    // a delivered request is not replayed to webviews that open later
+    const later: { type: string }[] = [];
+    sync.attach({ post: async (m) => (later.push(m as { type: string }), true) }).markReady();
+    expect(later.map((m) => m.type)).toEqual(['state']);
+  });
+
+  it('focusAttention is a valid extension message', () => {
+    expect(parseExtensionMessage({ type: 'focusAttention', extra: 1 })).toEqual({ type: 'focusAttention' });
+  });
 });

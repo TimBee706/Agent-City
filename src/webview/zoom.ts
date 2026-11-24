@@ -91,6 +91,31 @@ export function clampPan(t: ViewTransform, content: Size, viewport: Size, margin
   };
 }
 
+/** Ease-in-out cubic. */
+export function ease(u: number): number {
+  const x = Math.min(1, Math.max(0, u));
+  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+}
+
+/**
+ * Camera between two transforms at progress `u` (0..1, eased): the zoom is interpolated
+ * geometrically and the world point at the viewport centre moves on a straight line, so a flight
+ * neither swings sideways nor overshoots.
+ */
+export function lerpTransform(a: ViewTransform, b: ViewTransform, u: number, viewport: Size): ViewTransform {
+  const e = ease(u);
+  if (e <= 0) return a;
+  if (e >= 1) return b;
+  const cx = viewport.width / 2;
+  const cy = viewport.height / 2;
+  const k = a.k * Math.pow(b.k / a.k, e);
+  const ax = (cx - a.x) / a.k;
+  const ay = (cy - a.y) / a.k;
+  const bx = (cx - b.x) / b.k;
+  const by = (cy - b.y) / b.k;
+  return { k, x: cx - (ax + (bx - ax) * e) * k, y: cy - (ay + (by - ay) * e) * k };
+}
+
 export function transformAttr(t: ViewTransform): string {
   const r = (n: number) => Math.round(n * 100) / 100;
   return `translate(${r(t.x)} ${r(t.y)}) scale(${Math.round(t.k * 10000) / 10000})`;

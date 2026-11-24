@@ -23,6 +23,7 @@
     "src/webview/**/*",
     "src/shared/**/*",
     "src/models/**/*",
-    "test/unit/cityRender.test.ts"
+    "test/unit/cityRender.test.ts",
+    "test/unit/cityFx.test.ts"
   ]
 }

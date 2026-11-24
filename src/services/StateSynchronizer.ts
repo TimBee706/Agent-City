@@ -31,6 +31,8 @@ export class StateSynchronizer implements Disposable {
   private throttleTimer: unknown;
   private pending = false;
   private readonly timers: Timers;
+  /** A "next attention" request also reaches a webview that becomes ready before this time. */
+  private attentionUntil = 0;
 
   constructor(
     private readonly getState: () => CityState,
@@ -47,6 +49,10 @@ export class StateSynchronizer implements Disposable {
       markReady: () => {
         entry.ready = true;
         void entry.bus.post({ type: 'state', state: this.getState() });
+        if (Date.now() < this.attentionUntil) {
+          this.attentionUntil = 0;
+          void entry.bus.post({ type: 'focusAttention' });
+        }
       },
       get isReady() {
         return entry.ready;
@@ -87,6 +93,20 @@ export class StateSynchronizer implements Disposable {
   /** Asks all ready webviews to zoom-to-fit (after the next state they receive). */
   requestFit(): void {
     for (const t of this.targets) if (t.ready) void t.bus.post({ type: 'fitCity' });
+  }
+
+  /**
+   * Asks the webviews to show the next building that needs attention. A panel that is still
+   * loading (just opened by the command) gets the request as soon as it reports ready.
+   */
+  requestAttention(graceMs = 5000): void {
+    let delivered = false;
+    for (const t of this.targets) {
+      if (!t.ready) continue;
+      delivered = true;
+      void t.bus.post({ type: 'focusAttention' });
+    }
+    this.attentionUntil = delivered ? 0 : Date.now() + graceMs;
   }
 
   /** Events are forwarded immediately (they are small and drive animations). */

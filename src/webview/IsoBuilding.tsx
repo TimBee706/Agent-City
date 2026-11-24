@@ -1,17 +1,14 @@
-import { KeyboardEvent, memo, useRef } from 'react';
+import { KeyboardEvent, memo } from 'react';
 import type { Agent } from '../models/Agent';
 import type { Session } from '../models/Session';
 import { sessionPhase } from '../models/Session';
 import type { CityWorkspace } from '../models/Workspace';
-import { WALK_IN_WINDOW_MS } from './AgentCharacter';
 import { CITY, type BuildingPlacement } from './cityLayout';
-import { FACADE, buildingSummary, computeFacade, paletteFor } from './facade';
+import { FACADE, FacadeModel, buildingSummary, computeFacade, paletteFor } from './facade';
 import { truncate } from './format';
-import { Pt, boxFaces, faceQuad, facePoint, makeProjector, pts } from './iso';
-import { prefersReducedMotion, useIsoLayoutEffect } from './motion';
+import { Projector, Pt, boxFaces, faceQuad, facePoint, makeProjector, pts } from './iso';
 import type { Select } from './selection';
 import type { ArrowDir } from './navigation';
-import { MiniPerson } from './sprites';
 
 export type { ArrowDir };
 
@@ -24,11 +21,9 @@ interface Props {
   workspace: CityWorkspace;
   /** Sessions of this workspace (after filters). */
   sessions: readonly Session[];
-  /** Subagents that just spawned or are leaving (walk to / from the door). */
-  walkers: readonly Agent[];
   selected: boolean;
   /**
-   * Content signature of workspace + sessions + walkers (see buildingSignature). The memo compares
+   * Content signature of workspace + sessions (see buildingSignature). The memo compares
    * this instead of the (per state message recreated) objects, so unchanged buildings never re-render.
    */
   sig: string;
@@ -38,7 +33,7 @@ interface Props {
 }
 
 /** Signature of everything a city building draws (cheap string compare in the memo). */
-export function buildingSignature(ws: CityWorkspace, sessions: readonly Session[], walkers: readonly Agent[]): string {
+export function buildingSignature(ws: CityWorkspace, sessions: readonly Session[], walkers: readonly Agent[] = []): string {
   let s = `${ws.name}|${ws.open ? 1 : 0}|${ws.missing ? 1 : 0}|${ws.recentOverflow ?? 0}|${ws.archivedOverflow ?? 0}`;
   for (const x of sessions) s += `|${x.id}:${sessionPhase(x)}:${x.name ?? ''}`;
   for (const a of walkers) s += `|w:${a.agentId}:${a.leaving ? 1 : 0}`;
@@ -46,43 +41,30 @@ export function buildingSignature(ws: CityWorkspace, sessions: readonly Session[
 }
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
-const WALK_MS = 1500;
 
-/** Subagent walking from the street to the door (or out again). Web Animations API, CSP-safe. */
-function DoorWalker({ from, to, leaving, spawnedAt }: { from: Pt; to: Pt; leaving: boolean; spawnedAt?: number }) {
-  const ref = useRef<SVGGElement>(null);
-  useIsoLayoutEffect(() => {
-    const el = ref.current;
-    if (!el || typeof el.animate !== 'function' || prefersReducedMotion()) return undefined;
-    if (!leaving && (!spawnedAt || Date.now() - spawnedAt > WALK_IN_WINDOW_MS)) return undefined;
-    const dx = r1(from.x - to.x);
-    const dy = r1(from.y - to.y);
-    const street = `translate(${dx}px, ${dy}px)`;
-    const door = 'translate(0px, 0px)';
-    const frames = leaving
-      ? [
-          { transform: door, opacity: 0 },
-          { transform: door, opacity: 1, offset: 0.1 },
-          { transform: street, opacity: 1, offset: 0.9 },
-          { transform: street, opacity: 0 },
-        ]
-      : [
-          { transform: street, opacity: 0 },
-          { transform: street, opacity: 1, offset: 0.1 },
-          { transform: door, opacity: 1, offset: 0.9 },
-          { transform: door, opacity: 0 },
-        ];
-    const anim = el.animate(frames, { duration: WALK_MS, easing: 'ease-in-out', fill: 'forwards' });
-    return () => anim.cancel();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaving]);
-  return (
-    <g className="door-walker" transform={`translate(${r1(to.x)} ${r1(to.y)})`} aria-hidden="true">
-      <g ref={ref} className="door-walker-inner">
-        <MiniPerson />
-      </g>
-    </g>
-  );
+/** Screen anchors of a building that other layers (effects, badges) attach to. */
+export interface BuildingAnchors {
+  /** "!" sign above the door. */
+  alert: Pt;
+  /** Top of the chimney (pitched roofs) or of the roof unit (flat roofs): smoke / steam rises here. */
+  vent: Pt;
+  /** Centre of the roof at its highest point. */
+  roof: Pt;
+  /** Badges above the roof. */
+  badge: Pt;
+}
+
+export function buildingAnchors(p: Projector, b: Pick<BuildingPlacement, 'gx' | 'gy' | 'w' | 'd'>, f: Pick<FacadeModel, 'heightPx' | 'wallTopPx' | 'roof'>): BuildingAnchors {
+  const { gx, gy, w, d } = b;
+  const H = f.heightPx;
+  const roof = p(gx + w / 2, gy + d / 2, H);
+  const vent = f.roof === 'gable' ? p(gx + w * 0.68 + 0.12, gy + d / 2 - 0.31, H + 5) : { x: roof.x + 10, y: roof.y - 12 };
+  return {
+    alert: facePoint(p, 'left', gx, gy, w, d, 0.5, FACADE.BASE_H + 15.5),
+    vent,
+    roof,
+    badge: p(gx + w / 2, gy + d / 2, H + 18),
+  };
 }
 
 /**
@@ -90,7 +72,7 @@ function DoorWalker({ from, to, leaving, spawnedAt }: { from: Pt; to: Pt; leavin
  * window per live / recent session, roof, sign plate and status badges. Click = details,
  * double-click / Enter = enter the building, arrows = move to the neighbouring building.
  */
-function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, onSelect, onOpen, onArrow }: Props) {
+function IsoBuildingImpl({ b, ox, oy, workspace, sessions, selected, onSelect, onOpen, onArrow }: Props) {
   const p = makeProjector(ox, oy);
   const f = computeFacade(sessions, workspace);
   const { gx, gy, w, d } = b;
@@ -117,7 +99,12 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
   const silhouette = gable
     ? [p(gx, gy + d), p(gx + w, gy + d), p(gx + w, gy), p(gx + w, gy, wallTop), p(gx + w + ov, ridgeY, H), p(gx - ov, ridgeY, H), p(gx - ov, gy + d + ov, wallTop - 3)]
     : [p(gx, gy + d), p(gx + w, gy + d), p(gx + w, gy), p(gx + w, gy, H), p(gx, gy, H), p(gx, gy + d, H)];
-  const shadow = [p(gx + 0.1, gy + d + 0.05), p(gx + w + 0.55, gy + d + 0.05), p(gx + w + 0.55, gy - 0.1), p(gx + w + 0.1, gy - 0.25)];
+  // cast shadow on the lawn (towards +gx), longer for taller buildings
+  const cast = 0.45 + Math.min(0.75, H / 150);
+  const shadow = [p(gx + 0.15, gy + d + 0.06), p(gx + w + cast, gy + d + 0.06), p(gx + w + cast, gy - 0.02), p(gx + w, gy - 0.18), p(gx + w, gy + d)];
+  // bright vertical edge where the two visible faces meet
+  const cornerA = p(gx + w, gy + d, base);
+  const cornerB = p(gx + w, gy + d, wallTop);
 
   // floor lines on both faces
   const lines: string[] = [];
@@ -139,6 +126,15 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
     const z0 = base + floor * FACADE.FLOOR_H + 4;
     return faceQuad(p, face, gx, gy, w, d, u0, u1, z0, z0 + FACADE.FLOOR_H - 8);
   };
+  // glazing bars of all windows in one path
+  const bars: string[] = [];
+  const bar = (q: readonly Pt[]) => {
+    const mid = (a: Pt, c: Pt) => `${r1((a.x + c.x) / 2)} ${r1((a.y + c.y) / 2)}`;
+    bars.push(`M${mid(q[0], q[1])}L${mid(q[3], q[2])}M${mid(q[0], q[3])}L${mid(q[1], q[2])}`);
+  };
+  for (const win of f.windows) bar(windowQuad(win.face, win.floor, win.slot));
+  const lit = f.windows.some((x) => x.tone === 'working' || x.tone === 'waiting' || x.tone === 'idle');
+  const pool = p(gx + w / 2 + 0.2, gy + d + 0.75);
   const shutters = f.quiet
     ? ([
         ['left', 0],
@@ -156,11 +152,16 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
   const moreAt = facePoint(p, 'right', gx, gy, w, d, 1, base / 2);
 
   const door = faceQuad(p, 'left', gx, gy, w, d, 0.42, 0.58, base, base + 11);
+  const doorGlass = faceQuad(p, 'left', gx, gy, w, d, 0.455, 0.545, base + 6, base + 9.5);
+  const knob = facePoint(p, 'left', gx, gy, w, d, 0.555, base + 5);
+  const awning = [facePoint(p, 'left', gx, gy, w, d, 0.39, base + 12), facePoint(p, 'left', gx, gy, w, d, 0.61, base + 12), p(gx + w * 0.61, gy + d + 0.14, base + 10), p(gx + w * 0.39, gy + d + 0.14, base + 10)];
   const steps = [p(gx + w * 0.4, gy + d), p(gx + w * 0.6, gy + d), p(gx + w * 0.6, gy + d + 0.18), p(gx + w * 0.4, gy + d + 0.18)];
   const stepTop = [p(gx + w * 0.4, gy + d, base), p(gx + w * 0.6, gy + d, base), p(gx + w * 0.6, gy + d + 0.18, 0), p(gx + w * 0.4, gy + d + 0.18, 0)];
-  const alertAt = facePoint(p, 'left', gx, gy, w, d, 0.5, base + 15.5);
-  const roofCentre = p(gx + w / 2, gy + d / 2, H);
-  const badgeAt = p(gx + w / 2, gy + d / 2, H + 18);
+  const anchors = buildingAnchors(p, b, f);
+  const alertAt = anchors.alert;
+  const roofCentre = anchors.roof;
+  const badgeAt = anchors.badge;
+  const ridge = [p(gx - ov, ridgeY, H), p(gx + w + ov, ridgeY, H)];
   const cellGx = gx - CITY.FOOT_OFF;
   const cellGy = gy - CITY.FOOT_OFF;
 
@@ -191,6 +192,7 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
   return (
     <g className={cls} data-workspace-id={workspace.id}>
       <polygon className="bld-shadow" points={pts(shadow)} />
+      {lit && <ellipse className="bld-lightpool" cx={r1(pool.x)} cy={r1(pool.y)} rx={46} ry={20} />}
       {missing && (
         <g className="construction" aria-hidden="true">
           <path
@@ -233,14 +235,16 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
             />
           )}
           <path className="bld-floorline" d={lines.join('')} />
+          <path className="bld-corner" d={`M${r1(cornerA.x)} ${r1(cornerA.y)}L${r1(cornerB.x)} ${r1(cornerB.y)}`} />
           {f.windows.map((win) => (
-            <polygon key={win.sessionId} className={`win win--${win.tone}`} points={pts(windowQuad(win.face, win.floor, win.slot))}>
+            <polygon key={win.sessionId} className={`win win--${win.tone} wf-${(win.floor * 2 + win.slot + (win.face === 'left' ? 0 : 1)) % 4}`} points={pts(windowQuad(win.face, win.floor, win.slot))}>
               <title>{win.label}</title>
             </polygon>
           ))}
           {shutters.map(([face, slot]) => (
             <polygon key={`${face}${slot}`} className="win win--shut" points={pts(windowQuad(face, 0, slot))} />
           ))}
+          {bars.length > 0 && <path className="win-bars" d={bars.join('')} />}
           {f.dots > 0 && (
             <g className="arch-dots" aria-hidden="true">
               {dots.map((q, i) => (
@@ -256,6 +260,9 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
           <polygon className="bld-step" points={pts(stepTop)} />
           <polygon className="bld-step bld-step--front" points={pts(steps)} />
           <polygon className="bld-door" points={pts(door)} />
+          <polygon className="bld-door-glass" points={pts(doorGlass)} />
+          <circle className="bld-knob" cx={r1(knob.x)} cy={r1(knob.y)} r={0.8} />
+          <polygon className="bld-awning" points={pts(awning)} />
           {gable ? (
             <>
               <polygon className="bld-roof-back" points={pts(roofBack)} />
@@ -270,12 +277,13 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
               <polygon className="bld-roof-front" points={pts(roofFront)} />
               <path
                 className="bld-roof-tiles"
-                d={[0.33, 0.66].map((t) => {
+                d={[0.2, 0.4, 0.6, 0.8].map((t) => {
                   const a = p(gx - ov, gy + d + ov - (d / 2 + ov) * t, wallTop - 3 + (H - wallTop + 3) * t);
                   const c = p(gx + w + ov, gy + d + ov - (d / 2 + ov) * t, wallTop - 3 + (H - wallTop + 3) * t);
                   return `M${r1(a.x)} ${r1(a.y)}L${r1(c.x)} ${r1(c.y)}`;
                 }).join('')}
               />
+              <path className="bld-ridge" d={`M${r1(ridge[0].x)} ${r1(ridge[0].y)}L${r1(ridge[1].x)} ${r1(ridge[1].y)}`} />
             </>
           ) : (
             <>
@@ -292,10 +300,16 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
               <polygon className="ru-t" points="-6,-10 0,-13 6,-10 0,-7" />
             </g>
           )}
+          {!gable && f.floors >= 4 && (
+            <g className="roof-antenna" transform={`translate(${r1(roofCentre.x - 14)} ${r1(roofCentre.y + 3)})`} aria-hidden="true">
+              <path d="M0 0 L0 -26 M-4 -19 L4 -19 M-2.5 -23 L2.5 -23" />
+              <circle className="antenna-light" cx={0} cy={-27} r={1.6} />
+            </g>
+          )}
           {workspace.open && (
             <g className="roof-flag" transform={`translate(${r1(roofCentre.x - 12)} ${r1(roofCentre.y - 2)})`} aria-hidden="true">
               <line x1={0} y1={0} x2={0} y2={-22} />
-              <polygon points="0,-22 12,-18 0,-14" />
+              <path d="M0 -22 Q4 -24 7 -21 T13 -20 L13 -13.5 Q10 -14.5 7 -14 T0 -14 Z" />
             </g>
           )}
           {f.waiting > 0 && (
@@ -334,9 +348,6 @@ function IsoBuildingImpl({ b, ox, oy, workspace, sessions, walkers, selected, on
           )}
         </g>
       </g>
-      {walkers.map((a) => (
-        <DoorWalker key={a.agentId} from={b.street} to={b.door} leaving={!!a.leaving} spawnedAt={a.spawnedAt} />
-      ))}
     </g>
   );
 }
@@ -360,10 +371,11 @@ function BuildingPlateImpl({ b, ox, oy, name }: { b: BuildingPlacement; ox: numb
   const p = makeProjector(ox, oy);
   const at = p(b.gx - CITY.FOOT_OFF + CITY.PLOT / 2, b.gy - CITY.FOOT_OFF + CITY.PLOT);
   const text = truncate(name, 18);
-  const w = Math.max(36, text.length * 6.2 + 12);
+  const w = Math.max(36, text.length * 6.2 + 16);
   return (
     <g className="plate" transform={`translate(${r1(at.x)} ${r1(at.y)})`} aria-hidden="true">
-      <rect className="plate-board" x={r1(-w / 2)} y={-6} width={r1(w)} height={13} rx={3} />
+      <rect className="plate-shadow" x={r1(-w / 2 + 1)} y={-5} width={r1(w)} height={14} rx={7} />
+      <rect className="plate-board" x={r1(-w / 2)} y={-7} width={r1(w)} height={14} rx={7} />
       <text className="plate-text" y={4} textAnchor="middle">
         {text}
       </text>

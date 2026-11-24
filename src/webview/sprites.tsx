@@ -30,14 +30,18 @@ const CAR = (() => {
   ].map(([u, v]) => q(u, v, 2));
   const glass = pts([q(0.1, 0.1, 9), q(0.1, -0.1, 9), q(0.1, -0.1, 12.5), q(0.1, 0.1, 12.5)]);
   const light = q(0.24, 0.06, 5);
-  return { body, cabin, wheels, glass, light };
+  const sideGlass = pts([q(-0.09, 0.1, 9), q(0.08, 0.1, 9), q(0.08, 0.1, 12.5), q(-0.09, 0.1, 12.5)]);
+  const beam = pts([q(0.24, 0.1, 3), q(0.24, -0.1, 3), q(1.0, -0.26, 0), q(1.0, 0.26, 0)]);
+  const tail = q(-0.24, 0.12, 5.5);
+  return { body, cabin, wheels, glass, sideGlass, beam, light, tail };
 })();
 
 /** A toy car centred at (0, 0) on the ground. */
 export function CarShape({ variant, taxi = false }: { variant: number; taxi?: boolean }) {
   return (
     <g className={`car-shape car--${taxi ? 'taxi' : variant % 6}`}>
-      <ellipse className="car-shadow" cx={1} cy={2} rx={17} ry={7} />
+      <polygon className="car-beam" points={CAR.beam} />
+      <ellipse className="car-shadow" cx={1} cy={2} rx={18} ry={7.5} />
       {CAR.wheels.map((w, i) => (
         <ellipse key={i} className="car-wheel" cx={w.x} cy={w.y} rx={3} ry={2.2} />
       ))}
@@ -45,9 +49,11 @@ export function CarShape({ variant, taxi = false }: { variant: number; taxi?: bo
       <polygon className="car-front" points={CAR.body.right} />
       <polygon className="car-top" points={CAR.body.top} />
       <polygon className="car-side car-cabin" points={CAR.cabin.left} />
+      <polygon className="car-glass car-glass--side" points={CAR.sideGlass} />
       <polygon className="car-glass" points={CAR.glass} />
       <polygon className="car-cabin-top" points={CAR.cabin.top} />
-      <circle className="car-light" cx={CAR.light.x} cy={CAR.light.y} r={1.4} />
+      <circle className="car-light" cx={CAR.light.x} cy={CAR.light.y} r={1.5} />
+      <circle className="car-tail" cx={CAR.tail.x} cy={CAR.tail.y} r={1.1} />
       {taxi && (
         <g className="taxi-sign">
           <rect x={-5} y={-22} width={10} height={5} rx={1} />
@@ -66,22 +72,22 @@ function DecoImpl({ d, at }: { d: Decoration; at: Pt }) {
     case 'tree-round':
       return (
         <g className={cls} transform={t}>
-          <ellipse className="deco-shadow" cx={5} cy={1} rx={13} ry={5.5} />
-          <rect className="trunk" x={-2} y={-13} width={4} height={13} rx={1.2} />
-          <circle className="leaf leaf-a" cx={0} cy={-23} r={11.5} />
-          <circle className="leaf leaf-b" cx={-6} cy={-18} r={7} />
-          <circle className="leaf leaf-b" cx={6} cy={-17} r={6} />
-          <circle className="leaf-hi" cx={-3.5} cy={-27} r={4} />
+          <ellipse className="deco-shadow" cx={6} cy={1} rx={15} ry={6} />
+          <path className="trunk" d="M-2.2 0 L-1.6 -14 L1.6 -14 L2.2 0 Z" />
+          <circle className="leaf leaf-b" cx={-7} cy={-17} r={7.5} />
+          <circle className="leaf leaf-b" cx={7} cy={-16.5} r={6.5} />
+          <circle className="leaf leaf-a" cx={0} cy={-24} r={12} />
+          <ellipse className="leaf-hi" cx={-4} cy={-29} rx={5} ry={3} />
         </g>
       );
     case 'tree-cone':
       return (
         <g className={cls} transform={t}>
-          <ellipse className="deco-shadow" cx={4} cy={1} rx={11} ry={4.5} />
+          <ellipse className="deco-shadow" cx={5} cy={1} rx={13} ry={5} />
           <rect className="trunk" x={-1.8} y={-9} width={3.6} height={9} rx={1} />
-          <polygon className="leaf leaf-b" points="0,-30 12,-7 -12,-7" />
-          <polygon className="leaf leaf-a" points="0,-40 9.5,-19 -9.5,-19" />
-          <polygon className="leaf-hi" points="-1,-37 -4,-27 -7,-26" />
+          <path className="leaf leaf-b" d="M0 -29 Q8 -14 12.5 -8 Q0 -3.5 -12.5 -8 Q-8 -14 0 -29 Z" />
+          <path className="leaf leaf-a" d="M0 -41 Q6 -27 10 -20 Q0 -16 -10 -20 Q-6 -27 0 -41 Z" />
+          <path className="leaf-hi" d="M-1 -38 Q-4 -30 -7.5 -22 Q-5 -24 -1 -38 Z" />
         </g>
       );
     case 'bush':
@@ -121,7 +127,8 @@ function DecoImpl({ d, at }: { d: Decoration; at: Pt }) {
     case 'lamp':
       return (
         <g className={cls} transform={t}>
-          <circle className="lamp-glow" cx={0} cy={-31} r={9} />
+          <ellipse className="lamp-pool" cx={6} cy={2} rx={26} ry={12} />
+          <circle className="lamp-glow" cx={4} cy={-31.5} r={11} />
           <line className="lamp-pole" x1={0} y1={0} x2={0} y2={-30} />
           <path className="lamp-arm" d="M0 -30 Q0 -34 4 -33" />
           <circle className="lamp-light" cx={4} cy={-31.5} r={3} />
@@ -147,8 +154,9 @@ function DecoImpl({ d, at }: { d: Decoration; at: Pt }) {
       return (
         <g className={cls} transform={t}>
           <ellipse className="pond-rim" cx={0} cy={0} rx={46} ry={23} />
-          <ellipse className="pond-water" cx={0} cy={0} rx={41} ry={20} />
-          <ellipse className="pond-hi" cx={-12} cy={-6} rx={14} ry={4} />
+          <ellipse className="pond-water" cx={0} cy={0.8} rx={41} ry={19.5} />
+          <ellipse className="pond-hi" cx={-12} cy={-6} rx={14} ry={3.5} />
+          <path className="pond-ripple" d="M-4 6 q5 -2.4 10 0 M-26 -1 q4 -2 8 0 M16 -6 q4 -2 8 0" />
           <ellipse className="lily" cx={14} cy={5} rx={5} ry={2.5} />
           <ellipse className="lily" cx={-20} cy={7} rx={4} ry={2} />
           <path className="reeds" d={POND_REEDS} />
@@ -162,9 +170,7 @@ function DecoImpl({ d, at }: { d: Decoration; at: Pt }) {
           <ellipse className="fountain-water" cx={0} cy={-1.5} rx={22} ry={10.5} />
           <rect className="fountain-stone" x={-3.5} y={-17} width={7} height={15} rx={1.5} />
           <ellipse className="fountain-stone" cx={0} cy={-17} rx={9} ry={4} />
-          <g className="fountain-spray">
-            <path d="M0 -19 Q-7 -32 -12 -18 M0 -19 Q7 -32 12 -18 M0 -19 L0 -31" />
-          </g>
+          <ellipse className="fountain-water" cx={0} cy={-17.5} rx={6.5} ry={2.6} />
         </g>
       );
     case 'swing':
@@ -182,6 +188,15 @@ function DecoImpl({ d, at }: { d: Decoration; at: Pt }) {
 
 /** One decoration sprite at a screen point (memoised: static per layout). */
 export const Deco = memo(DecoImpl);
+
+/** Fountain jets (animated; rendered in the effects layer above the static fountain). */
+export function FountainSpray() {
+  return (
+    <g className="fountain-spray">
+      <path d="M0 -19 Q-7 -32 -12 -18 M0 -19 Q7 -32 12 -18 M0 -19 L0 -31" />
+    </g>
+  );
+}
 
 /** Tiny person used on the city map (subagents walking to the door). */
 export function MiniPerson() {

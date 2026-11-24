@@ -28,6 +28,8 @@ export interface SessionManagerConfig {
   demoMode: DemoMode;
   /** Forwarded to the webviews (ambient day/night tint). */
   dayNight?: boolean;
+  /** Ambient effects (clouds, birds, smoke, fireworks). */
+  effects?: boolean;
   /** Maximum archived (history) rooms per building; the rest is shown as "+N archived". */
   historyMaxPerWorkspace?: number;
   /** Maximum recent (resting) rooms per building; the rest is listed in the history index. */
@@ -403,7 +405,7 @@ export class SessionManager implements Disposable {
       activity: live ? this.activity : undefined,
       hooks,
       stats: { tasksCompletedToday: live ? this.activity.tasksCompletedToday(now) : 0 },
-      config: { dayNight: cfg.dayNight ?? true },
+      config: { dayNight: cfg.dayNight ?? true, effects: cfg.effects ?? true },
       historyIndex,
     });
     const fp = cityFingerprint(next);

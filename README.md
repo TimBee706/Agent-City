@@ -30,16 +30,18 @@ A living city visualization of your local **Claude Code** environment, inside VS
 - **City panel** (`Claude City: Open City`) with two levels
   - **Level 1 - the city ("play rug")**: a slightly 3D (isometric) toy town. Every workspace is a colourful house on its own plot (palette per workspace), connected by streets with zebra crossings; parks with trees, a pond, a fountain, benches, street lamps and traffic lights in between; toy cars drive around (click one: *Beep!*; the yellow **taxi** drives you to the next building that needs your attention). Every live / recent session is a lit window (working = warm yellow, waiting = pulsing orange + "!" over the door, idle = blue, recent = dim blue, done = green, failed = red), archived sessions are cardboard boxes in the basement strip ("+N" beyond 12). Houses with 1-2 floors get a pitched roof, bigger ones are office blocks (up to 6 floors). Hover lifts a house and shows its counts.
   - **Level 2 - inside a building**: double-click a house, press Enter on it or use *Enter building* in the details. A cut-away side view: lobby, office floors with one room per live session (characters at desks, raised hand when waiting, check mark when done, red warning when failed) and per recent session (sleeping character), an elevator subagents walk out of, and the **basement** with one archive box per archived session (up to 60, then "+N" which opens the full list). Breadcrumb *City › name*, *Back to city*, Escape or Backspace return to the city with the previous camera.
-  - **zoom & pan** on both levels: mouse wheel zooms around the cursor, drag to pan, `+` / `−` / fit buttons, keyboard `+` `−` `0` and arrow keys when the map is focused. Zoomed far out, small decorations and labels are hidden (level of detail)
-  - **keyboard**: Tab to a building, then arrow keys move to the neighbouring building on screen (and show its details), Enter goes inside, Space shows details, Escape closes details / goes back up a level; all rooms and archive boxes are focusable with descriptive labels
+  - **zoom & pan** on both levels: mouse wheel zooms around the cursor, drag to pan, `+` / `−` / fit buttons, keyboard `+` `−` `0` and arrow keys when the map is focused. Buttons, keys and jumps to a building glide there (smooth camera flights; instant with reduced motion). Zoomed far out, small decorations and labels are hidden (level of detail)
+  - **minimap** (from 6 buildings on): the whole city in a corner, one dot per building coloured by what needs attention (orange = waiting for you, red = failed, yellow = working, blue = live), with a frame for the current view. Click or drag it to move the camera
+  - **keyboard**: Tab to a building, then arrow keys move to the neighbouring building on screen (and show its details), Enter goes inside, Space shows details, Escape closes details / goes back up a level, `N` flies to the next building that needs your attention (same as the taxi and the command *Go to Next Session That Needs Attention*); all rooms and archive boxes are focusable with descriptive labels
   - **search & filters**: by company / session / agent name, task or path; state chips (working, waiting, idle, done, failed, stopped); *hide inactive companies*; *only companies with sessions* (both off by default)
   - **scales to 100+ buildings**: rows adapt to the panel's shape, buildings with working/waiting sessions come first, then by last activity, then by name; the city zooms to fit on first load and after an import
   - **detail panels** for buildings (path, sessions, active agents, last activity, *Enter building*, *Open Workspace* / *Open in New Window*), archive boxes (title, session id, branch, last activity, *Open Session*), rooms (session id with copy button, state, status, waiting for, started, agents, *Open Session* / *Open Workspace*) and agents (type, parent session, state, task, latest event, *Open Session*)
   - **HUD**: counts, most active company, tasks completed today, "❗ N need your attention" (click focuses the room), LIVE pulse, data-source and hook badges
   - **live events** (optional hooks): subagents spawn at the building entrance and walk to a desk, walk out when finished; task completion sparkles; attention bubbles; transient rooms for brand-new sessions
-  - an optional static day/night tint (dusk rug colours, glowing street lamps at night); dark themes use a darker, still colourful rug
+  - **day and night** (optional): the sky, a sun or moon with stars, and the city's light follow your local time - at night walls darken, lit windows glow, houses and street lamps throw light onto the ground and the toy cars switch on their headlights; dark themes use a darker, still colourful rug
+  - **ambient life** (optional, `claudeCity.ambient.effects`): drifting clouds, a flock of birds, chimney smoke on houses where a session is working, fountain jets, a pulsing ring around every "!" that waits for you, a bouncing pin over the selected building and fireworks over a building when one of its tasks completes
   - UI state (selection, filters, level, camera per level) survives hiding/reopening the panel; toy cars pause while the panel or the city level is hidden
-  - scales to 150+ workspaces: the ground is drawn once per layout, houses only re-render when their sessions change, zoom / pan never re-render React
+  - scales to 150+ workspaces: the ground is drawn once per layout, houses only re-render when their sessions change, zoom / pan never re-render React. The scene is split into camera layers (ground, cars, buildings, effects): panning only moves them on the GPU, and everything that animates sits in the small cars / effects layers so the static city is never redrawn for it (see [Performance](#performance))
 - **Three session tiers**: **Live** (reported by `claude agents --json --all` - running, or finished but still listed), **Recent** (not running, still in Claude Code's normal session list: dim windows, rooms with a sleeping character) and **Archived** (boxes in the basement strip of each house and on the basement shelves inside, "+N" for the rest). Recent and archived sessions come from your local transcripts (`~/.claude/projects`); their detail panel shows title, session id, branch, start / last activity and subagent count, with *Open Session* (resume) and *Open Workspace*. The building panel lists all recent and archived sessions (up to 200 per building). *Live / Recent / Archived* chips filter by tier; search also matches past titles and branches. Past sessions never count as working/idle/done and never create feed events. See [Past sessions](#past-sessions).
 - **Live data** from `claude agents --json --all` (polled, never overlapping, diff-based updates). Polling stays the authoritative source; hooks only enrich it.
 - **Demo mode** for trying it out without the Claude CLI (always clearly labelled *DEMO*).
@@ -68,12 +70,14 @@ A living city visualization of your local **Claude Code** environment, inside VS
 | `claudeCity.history.useClaudeCodeArchive` | `true` | Best effort: use the Claude Code extension's own *archived* flag (see [Past sessions](#past-sessions)). |
 | `claudeCity.hookBridge.enabled` | `true` | Run the loopback-only live-event server. Hooks themselves are only installed by command. |
 | `claudeCity.hookBridge.port` | `47821` | Fixed loopback port (fixed so the hook URL in Claude settings stays valid across restarts). Changing it requires reinstalling the hooks. |
-| `claudeCity.ambient.dayNight` | `true` | Static tint of the city by local time of day. |
+| `claudeCity.ambient.dayNight` | `true` | Light the city by local time of day: sky, sun or moon and stars, glowing windows and street lamps at night. |
+| `claudeCity.ambient.effects` | `true` | Ambient animations: clouds, birds, chimney smoke, fountain jets and fireworks on completed tasks. Always off with reduced motion. Attention alerts are never switched off. |
 
 ## Commands
 
 - `Claude City: Open City`
 - `Claude City: Refresh`
+- `Claude City: Go to Next Session That Needs Attention` (opens the city and flies to the next building with a waiting, failed or working session - bind it to a key if you like)
 - `Claude City: Toggle Demo Data` (runtime override; changing the `demoMode` setting resets it)
 - `Claude City: Install Live Event Hooks…`
 - `Claude City: Remove Live Event Hooks…`
@@ -206,10 +210,28 @@ internal registry. If the session belongs to a folder that is not open in this w
 ## Privacy & security
 
 - Runs only the local `claude` CLI with fixed arguments; the only network listener is the loopback hook bridge described above; no telemetry.
-- Webviews use a strict Content Security Policy (nonce scripts, no inline styles, no `unsafe-inline`, no remote resources). All graphics are inline SVG generated in code (no images or fonts). Walking, driving and level transitions use the Web Animations API (CSP-safe).
+- Webviews use a strict Content Security Policy (nonce scripts, no inline styles, no `unsafe-inline`, no remote resources). All graphics are inline SVG and CSS generated in code (no images or fonts). Walking, driving and level transitions use the Web Animations API, and the camera is set through the CSSOM (both CSP-safe).
 - Session names, paths, archived titles and hook texts are rendered as plain text.
 - Folder import / root rescans only list folder names (async, one level deep plus a marker check); folder paths only come from the native folder picker or your user settings - the webview can only send workspace ids, never paths.
 - Past-session import reads local transcripts read-only (head/tail only, see [Past sessions](#past-sessions)); no transcript content is logged or sent anywhere.
+
+## Performance
+
+The city is SVG, so it stays sharp at every zoom level. To keep it cheap as well:
+
+- **Camera layers.** Ground, cars, buildings and effects are four stacked layers that share one camera. The camera is a CSS
+  transform, so panning moves finished textures on the GPU instead of redrawing the city; after a zoom the browser re-rasters
+  at the new scale, so nothing gets blurry.
+- **Static stays static.** Nothing in the ground or buildings layer runs a continuous animation. Cars, smoke, alert rings,
+  fireworks and walking subagents live in the cars / effects layers (compositor-only `transform` / `opacity` animations).
+  Blinking lights in the static layers (traffic lights, flickering windows, antenna beacons) are switched by one slow clock
+  (a class change every 0.7 s) instead of CSS animations, which would recalculate styles on every frame.
+- **Culling and level of detail.** Effects only run for buildings in view (at most 48 at once; zoomed far out only alerts keep
+  moving), and small details are hidden when zoomed out.
+- Everything pauses while the panel or the city level is hidden.
+
+Measured with `npm run bench` (150 buildings, headless Chromium, software rendering, main-thread time): idle about 1090 ms → 90 ms
+per 3 s, panning about 3570 ms → 1000-1300 ms, wheel zoom about 3300 ms → 1200-1300 ms for the same gestures, compared with 0.1.0.
 
 ## Troubleshooting
 
@@ -230,6 +252,11 @@ npm run package          # builds agent-city.vsix
 ```
 
 See [docs/RELEASING.md](docs/RELEASING.md) for the release checklist and [CHANGELOG.md](CHANGELOG.md) for changes.
+
+`npm run screenshots` re-creates the README screenshots from a deterministic preview city, `node scripts/smoke.mjs` drives the
+webview in a real browser under the webview's Content Security Policy and checks the main interactions, and `npm run bench`
+measures main-thread cost while idle, panning and zooming (all three need [Playwright](https://playwright.dev), which is not a
+dependency of this repo: `npm i -g playwright`, then run with `NODE_PATH=$(npm root -g)`).
 
 Press `F5` in VS Code to launch an Extension Development Host. To try live events without touching your real settings, install the
 hooks into the workspace's `.claude/settings.local.json` of a scratch folder and start `claude` there.

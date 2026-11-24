@@ -4,6 +4,7 @@ import type { CityState } from '../models/CityState';
 import { computeCounts, emptyCityState } from '../models/CityState';
 import { ViewKind, parseExtensionMessage } from '../shared/protocol';
 import { BuildingView } from './BuildingView';
+import { CityDefs } from './CityGround';
 import { CityMap, FocusRequest } from './CityMap';
 import { DetailPanel } from './DetailPanel';
 import { EventFeed } from './EventFeed';
@@ -86,6 +87,7 @@ export function App({ view }: { view: ViewKind }) {
   const [sparkles, setSparkles] = useState<ReadonlySet<string>>(() => new Set());
   const [focusRequest, setFocusRequest] = useState<FocusRequest | undefined>();
   const [fitRequest, setFitRequest] = useState(0);
+  const [attentionRequest, setAttentionRequest] = useState(0);
   const [nav, setNav] = useState<NavState>(initial.nav ?? CITY_NAV);
   const [panelAutoFocus, setPanelAutoFocus] = useState(true);
   const [announcement, announce] = useAnnouncer();
@@ -111,6 +113,12 @@ export function App({ view }: { view: ViewKind }) {
       }
       if (msg.type === 'fitCity') {
         setFitRequest((n) => n + 1);
+        return;
+      }
+      if (msg.type === 'focusAttention') {
+        // the taxi lives on the city level
+        setNav(CITY_NAV);
+        setAttentionRequest((n) => n + 1);
         return;
       }
       setEvents((prev) => mergeEvents(prev, msg.events));
@@ -269,6 +277,8 @@ export function App({ view }: { view: ViewKind }) {
     [onSelect, revealSession],
   );
 
+  const nothingToAttend = useCallback(() => announce(['Nothing needs your attention right now']), [announce]);
+
   const filtered = useMemo(() => applyFilters(state, filters), [state, filters]);
   const buildingWs = nav.level === 'building' ? filtered.workspaces.find((w) => w.id === nav.workspaceId) : undefined;
   const buildingData = useMemo(() => {
@@ -386,6 +396,7 @@ export function App({ view }: { view: ViewKind }) {
       />
       <div className="layout">
         <div className="map-area">
+        <CityDefs />
         <CityMap
           workspaces={filtered.workspaces}
           sessions={filtered.sessions}
@@ -398,7 +409,11 @@ export function App({ view }: { view: ViewKind }) {
           onTransformChange={onTransformChange}
           focusRequest={focusRequest}
           fitRequest={fitRequest}
+          attentionRequest={attentionRequest}
+          onNothingToAttend={nothingToAttend}
           empty={emptyContent}
+          sparkles={sparkles}
+          effects={state.config?.effects !== false}
         />
         {nav.level === 'building' &&
           (buildingWs ? (
