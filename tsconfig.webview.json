@@ -24,6 +24,7 @@
     "src/shared/**/*",
     "src/models/**/*",
     "test/unit/cityRender.test.ts",
-    "test/unit/cityFx.test.ts"
+    "test/unit/cityFx.test.ts",
+    "test/unit/listView.test.ts"
   ]
 }

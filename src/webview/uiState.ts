@@ -2,6 +2,7 @@
  * Persisted webview UI state (vscode.setState) with a version, pure + unit-tested.
  */
 import { CityFilters, sanitizeFilters } from './filters';
+import { ListSort, ViewMode, sanitizeExpanded, sanitizeListSort, sanitizeViewMode } from './listModel';
 import { CITY_NAV, NavState, sanitizeNav } from './navigation';
 import type { Selection } from './selection';
 import { ViewTransform, isValidTransform } from './zoom';
@@ -33,6 +34,11 @@ export interface UiState {
   nav?: NavState;
   /** Camera of the building level (for the building it was saved for). */
   buildingZoom?: BuildingCamera;
+  /** City (map) or list (tree). Missing = city. */
+  view?: ViewMode;
+  /** List view: open rows (keys, see listModel) and the order of the companies. */
+  listExpanded?: string[];
+  listSort?: ListSort;
 }
 
 function sanitizeBuildingCamera(v: unknown): BuildingCamera | undefined {
@@ -60,6 +66,15 @@ export function migrateUiState(raw: unknown): UiState {
   const version = typeof o.v === 'number' && Number.isFinite(o.v) ? o.v : 0;
   const filters = sanitizeFilters(o.filters);
   const ui: UiState = { v: UI_STATE_VERSION, filters, selection: sanitizeSelection(o.selection), nav: CITY_NAV };
+  // the list view (added in 0.3.0) does not depend on the city's coordinates: kept across all versions
+  // (only non-default values are stored)
+  if (version <= UI_STATE_VERSION) {
+    if (sanitizeViewMode(o.view) === 'list') ui.view = 'list';
+    const open = sanitizeExpanded(o.listExpanded);
+    if (open.length) ui.listExpanded = open;
+    const sort = sanitizeListSort(o.listSort);
+    if (sort !== 'attention') ui.listSort = sort;
+  }
   if (version < 2) {
     filters.hideInactive = false;
     filters.onlyWithSessions = false;

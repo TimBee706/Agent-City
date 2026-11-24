@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { CityFilters, DEFAULT_FILTERS, PHASE_FILTERS, PhaseFilter, TIER_FILTERS, TierFilter, togglePhase, toggleTier } from './filters';
 import { PHASE_GLYPH } from './format';
+import { VIEW_MODES, ViewMode } from './listModel';
 
 const TIER_TEXT: Record<TierFilter, string> = { live: 'Live', recent: 'Recent', archived: 'Archived' };
 const TIER_GLYPH: Record<TierFilter, string> = { live: '●', recent: PHASE_GLYPH.resting, archived: PHASE_GLYPH.archived };
@@ -16,7 +17,17 @@ interface Props {
   hiddenWorkspaces: number;
   hiddenSessions: number;
   active: boolean;
+  /** Map or list; the switch is only shown when a handler is given. */
+  view?: ViewMode;
+  onViewChange?: (view: ViewMode) => void;
 }
+
+const VIEW_TEXT: Record<ViewMode, string> = { city: 'City', list: 'List' };
+const VIEW_GLYPH: Record<ViewMode, string> = { city: '⌂', list: '☰' };
+const VIEW_TITLE: Record<ViewMode, string> = {
+  city: 'Show the city map',
+  list: 'Show companies, sessions and agents as a list that can be expanded',
+};
 
 const PHASE_TEXT: Record<PhaseFilter, string> = {
   working: 'Working',
@@ -28,9 +39,18 @@ const PHASE_TEXT: Record<PhaseFilter, string> = {
 };
 
 /** Search + filter bar for the city panel. */
-function ToolbarImpl({ filters, onChange, hiddenWorkspaces, hiddenSessions, active }: Props) {
+function ToolbarImpl({ filters, onChange, hiddenWorkspaces, hiddenSessions, active, view = 'city', onViewChange }: Props) {
   return (
     <div className="toolbar glass" role="search" aria-label="Search and filter the city">
+      {onViewChange && (
+        <div className="view-switch" role="group" aria-label="View">
+          {VIEW_MODES.map((m) => (
+            <button key={m} className={`view-switch-button${view === m ? ' is-on' : ''}`} aria-pressed={view === m} title={VIEW_TITLE[m]} onClick={() => onViewChange(m)}>
+              <span aria-hidden="true">{VIEW_GLYPH[m]}</span> {VIEW_TEXT[m]}
+            </button>
+          ))}
+        </div>
+      )}
       <input
         className="search-input"
         type="search"

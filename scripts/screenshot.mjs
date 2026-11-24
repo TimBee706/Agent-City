@@ -22,11 +22,11 @@ const { previewState } = require(stateBundle);
 const THEMES = {
   dark: {
     cls: 'vscode-dark',
-    vars: { '--vscode-editor-background': '#1e1e1e', '--vscode-editor-foreground': '#d4d4d4', '--vscode-focusBorder': '#007fd4', '--vscode-font-family': 'system-ui, sans-serif', '--vscode-button-background': '#0e639c', '--vscode-button-foreground': '#ffffff', '--vscode-panel-border': '#3c3c3c', '--vscode-descriptionForeground': '#9d9d9d', '--vscode-input-background': '#3c3c3c', '--vscode-input-foreground': '#cccccc', '--vscode-sideBar-background': '#252526', '--vscode-textLink-foreground': '#3794ff' },
+    vars: { '--vscode-editor-background': '#1e1e1e', '--vscode-editor-foreground': '#d4d4d4', '--vscode-foreground': '#cccccc', '--vscode-focusBorder': '#007fd4', '--vscode-font-family': 'system-ui, sans-serif', '--vscode-button-background': '#0e639c', '--vscode-button-foreground': '#ffffff', '--vscode-panel-border': '#3c3c3c', '--vscode-descriptionForeground': '#9d9d9d', '--vscode-input-background': '#3c3c3c', '--vscode-input-foreground': '#cccccc', '--vscode-sideBar-background': '#252526', '--vscode-textLink-foreground': '#3794ff' },
   },
   light: {
     cls: 'vscode-light',
-    vars: { '--vscode-editor-background': '#ffffff', '--vscode-editor-foreground': '#333333', '--vscode-focusBorder': '#0090f1', '--vscode-font-family': 'system-ui, sans-serif', '--vscode-button-background': '#007acc', '--vscode-button-foreground': '#ffffff', '--vscode-panel-border': '#d4d4d4', '--vscode-descriptionForeground': '#717171', '--vscode-input-background': '#ffffff', '--vscode-input-foreground': '#616161', '--vscode-sideBar-background': '#f3f3f3', '--vscode-textLink-foreground': '#006ab1' },
+    vars: { '--vscode-editor-background': '#ffffff', '--vscode-editor-foreground': '#333333', '--vscode-foreground': '#3b3b3b', '--vscode-focusBorder': '#0090f1', '--vscode-font-family': 'system-ui, sans-serif', '--vscode-button-background': '#007acc', '--vscode-button-foreground': '#ffffff', '--vscode-panel-border': '#d4d4d4', '--vscode-descriptionForeground': '#717171', '--vscode-input-background': '#ffffff', '--vscode-input-foreground': '#616161', '--vscode-sideBar-background': '#f3f3f3', '--vscode-textLink-foreground': '#006ab1' },
   },
 };
 
@@ -81,12 +81,19 @@ if (isMain) {
     await page.locator('.iso-building .bld-shell').nth(6).dblclick();
     await page.clock.runFor(800);
   };
+  const list = async (page) => {
+    await page.locator('.view-switch-button', { hasText: 'List' }).click();
+    for (const i of [0, 1]) await page.locator('.lv-row--workspace .lv-twisty').nth(i).click();
+    await page.locator('.lv-row--group .lv-twisty').first().click();
+    await page.locator('.lv-row--session').first().click();
+  };
   const only = process.argv[3];
   const shots = [
     ['city-dark', 'dark', 21, {}],
     ['city-light-closeup', 'light', 11, { act: async (page) => { for (let i = 0; i < 4; i++) await page.locator('.zoom-controls button').first().click(); await page.clock.runFor(600); } }],
     ['building-dark', 'dark', 21, { act: enter }],
     ['building-light-reduced-motion', 'light', 11, { reduced: true, act: enter }],
+    ['list-dark', 'dark', 21, { act: list }],
   ];
   for (const [name, theme, hour, opts] of shots) if (!only || name.includes(only)) await shot(name, theme, hour, opts);
   await browser.close();

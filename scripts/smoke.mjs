@@ -107,6 +107,46 @@ await page.keyboard.press('Escape');
 await page.waitForTimeout(400);
 check('Escape returns to the city', (await page.locator('.building-view').count()) === 0 && (await page.locator('.city-map:not(.is-hidden)').count()) === 1);
 
+// list view: switch, expand / collapse, keyboard, selection, back to the building in the city
+await page.locator('.view-switch-button', { hasText: 'List' }).click();
+await page.waitForSelector('.list-view .lv-row');
+check('list view replaces the map', (await page.locator('.city-map.is-hidden').count()) === 1);
+const rowCount = () => page.locator('.lv-row').count();
+const collapsed = await rowCount();
+check('one row per company when collapsed', collapsed === 24, `${collapsed}`);
+await page.locator('.lv-row--workspace .lv-twisty').first().click();
+const opened = await rowCount();
+check('the arrow expands a company', opened > collapsed, `${opened}`);
+await page.locator('.lv-row--workspace').first().focus();
+await page.keyboard.press('ArrowLeft');
+await page.waitForTimeout(100);
+check('Left collapses it', (await rowCount()) === collapsed);
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(100);
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(100); // focus moves after the render
+check('Right opens it and steps to the first session', await page.evaluate(() => document.activeElement?.classList.contains('lv-row--session') ?? false));
+await page.keyboard.press('Enter');
+await page.waitForTimeout(100);
+check('Enter selects the session (details panel)', (await page.locator('.lv-row--session.is-selected').count()) === 1);
+await page.getByRole('button', { name: 'Expand all' }).click();
+check('Expand all opens every company', (await page.locator('.lv-row--workspace[aria-expanded="true"]').count()) === 24);
+await page.getByRole('button', { name: 'Collapse all' }).click();
+check('Collapse all closes everything', (await rowCount()) === collapsed);
+await page.locator('.lv-sort select').selectOption('name');
+const names = await page.locator('.lv-row--workspace .lv-name').allTextContents();
+check('sorting by name', names.join('|') === [...names].sort((x, y) => x.toLowerCase().localeCompare(y.toLowerCase())).join('|'));
+check('view, sort and open rows are persisted', await page.evaluate(() => { const st = window.acquireVsCodeApi().getState(); return st.view === 'list' && st.listSort === 'name'; }));
+// HUD "needs your attention" reveals the session in the list
+await page.locator('.attention-button').first().click();
+await page.waitForTimeout(200);
+check('attention button reveals and selects the waiting session', (await page.locator('.lv-row--session.is-selected .lv-glyph--waiting').count()) === 1);
+await page.locator('.lv-row--workspace .lv-enter').first().click({ force: true });
+await page.waitForSelector('.building-view');
+check('"show in the city" switches back to the map and enters the building', (await page.locator('.list-view').count()) === 0);
+await page.keyboard.press('Escape');
+await page.keyboard.press('Escape');
+
 check('no Content Security Policy violations', (await page.evaluate(() => window.__csp)).length === 0, JSON.stringify(await page.evaluate(() => window.__csp)));
 check('no page errors', errors.length === 0, errors.join(' | '));
 await page.screenshot({ path: join(work, 'smoke.png') });
