@@ -13,6 +13,7 @@ suite('Claude City smoke test', () => {
     for (const id of [
       'claudeCity.open',
       'claudeCity.refresh',
+      'claudeCity.nextAttention',
       'claudeCity.toggleDemoData',
       'claudeCity.installHooks',
       'claudeCity.uninstallHooks',
@@ -37,6 +38,7 @@ suite('Claude City settings', () => {
     assert.strictEqual(c.get('hookBridge.enabled'), true);
     assert.strictEqual(c.get('hookBridge.port'), 47821);
     assert.strictEqual(c.get('ambient.dayNight'), true);
+    assert.strictEqual(c.get('ambient.effects'), true);
     assert.deepStrictEqual(c.get('workspaceRoots'), []);
     assert.strictEqual(c.inspect('workspaceRoots')?.globalValue, undefined, 'tests must not write user settings');
   });

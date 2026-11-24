@@ -2,7 +2,7 @@
   "name": "agent-city",
   "displayName": "Agent City - Workspace and Agent Session Manager",
   "description": "A living city visualization of your local Claude Code sessions and agents.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "TimoBeermann",
   "license": "MIT",
   "repository": {
@@ -57,6 +57,12 @@
         "title": "Refresh",
         "category": "Claude City",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeCity.nextAttention",
+        "title": "Go to Next Session That Needs Attention",
+        "category": "Claude City",
+        "icon": "$(bell-dot)"
       },
       {
         "command": "claudeCity.toggleDemoData",
@@ -126,6 +132,11 @@
           "command": "claudeCity.uninstallHooks",
           "when": "view == claudeCity.overview",
           "group": "hooks@2"
+        },
+        {
+          "command": "claudeCity.nextAttention",
+          "when": "view == claudeCity.overview",
+          "group": "navigation@3"
         }
       ]
     },
@@ -223,7 +234,12 @@
         "claudeCity.ambient.dayNight": {
           "type": "boolean",
           "default": true,
-          "description": "Tint the city according to the local time of day (static tint, no animation)."
+          "description": "Light the city according to the local time of day: sky, sun or moon and stars, glowing windows and street lamps at night."
+        },
+        "claudeCity.ambient.effects": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ambient animations: drifting clouds, birds, chimney smoke on busy houses and fireworks when a task completes. Turn off for a calmer city; always off with reduced motion."
         }
       }
     }
@@ -238,7 +254,9 @@
     "test:watch": "vitest",
     "pretest:integration": "npm run compile && tsc -p tsconfig.integration.json",
     "test:integration": "node ./out/test/integration/runTest.js",
-    "package": "vsce package --out agent-city.vsix"
+    "package": "vsce package --out agent-city.vsix",
+    "screenshots": "npm run compile && node scripts/screenshot.mjs",
+    "bench": "npm run compile && node scripts/bench.mjs"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

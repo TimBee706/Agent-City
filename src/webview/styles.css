@@ -456,7 +456,6 @@ button {
   touch-action: none;
   border-radius: var(--cc-radius);
   border: 1px solid var(--cc-glass-border);
-  background: color-mix(in srgb, var(--cc-bg) 88%, var(--cc-neon) 4%);
 }
 
 .city-map.is-panning {
@@ -1037,15 +1036,27 @@ body.vscode-high-contrast-light .resting-char {
   border-radius: 999px;
   padding: 2px 10px;
   font-weight: 600;
+  position: relative;
+}
+/* the ring pulses through opacity only (compositor): animating box-shadow would restyle and
+   repaint on every frame for as long as something needs attention */
+.attention-button::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 3px solid color-mix(in srgb, var(--cc-waiting) 45%, transparent);
+  pointer-events: none;
+  opacity: 0;
   animation: cc-ring 2s ease-in-out infinite;
 }
 @keyframes cc-ring {
   0%,
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--cc-waiting) 0%, transparent);
+    opacity: 0;
   }
   50% {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cc-waiting) 35%, transparent);
+    opacity: 1;
   }
 }
 .attention-button.wide {
@@ -1227,27 +1238,6 @@ body.vscode-high-contrast-light .resting-char {
   pointer-events: none;
 }
 
-/* ------------------------------------------------------------------ day / night tint (static) */
-.city-map::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: transparent;
-}
-.tint-dawn .city-map::after {
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--vscode-charts-orange, #d18616) 9%, transparent), transparent 55%);
-}
-.tint-day .city-map::after {
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--vscode-charts-blue, #3794ff) 6%, transparent), transparent 50%);
-}
-.tint-dusk .city-map::after {
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--vscode-charts-purple, #b180d7) 12%, transparent), transparent 60%);
-}
-.tint-night .city-map::after {
-  background: linear-gradient(to bottom, color-mix(in srgb, #000 22%, transparent), color-mix(in srgb, #000 6%, transparent));
-}
-
 /* ------------------------------------------------------------------ high contrast: borders, no glows */
 body.vscode-high-contrast .glass,
 body.vscode-high-contrast-light .glass {
@@ -1261,10 +1251,6 @@ body.vscode-high-contrast .live-dot,
 body.vscode-high-contrast-light .live-dot {
   text-shadow: none;
   box-shadow: none;
-}
-body.vscode-high-contrast .city-map::after,
-body.vscode-high-contrast-light .city-map::after {
-  display: none;
 }
 body.vscode-high-contrast .chip,
 body.vscode-high-contrast-light .chip,
@@ -1281,7 +1267,7 @@ body.vscode-high-contrast-light .chip.is-on {
 
 /* Reduced motion for the new rules: static indicators only. Walking is skipped in JS (WAAPI). */
 @media (prefers-reduced-motion: reduce) {
-  .attention-button,
+  .attention-button::after,
 .bubble-inner,
 .sparkle path,
 .sparkle circle,
@@ -1293,7 +1279,7 @@ body.vscode-high-contrast-light .chip.is-on {
     transition: none !important;
   }
 }
-body.vscode-reduce-motion .attention-button,
+body.vscode-reduce-motion .attention-button::after,
 body.vscode-reduce-motion .bubble-inner,
 body.vscode-reduce-motion .sparkle path,
 body.vscode-reduce-motion .sparkle circle,

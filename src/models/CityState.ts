@@ -28,6 +28,8 @@ export interface CityStats {
 /** UI-relevant settings forwarded to the webviews. */
 export interface CityUiConfig {
   dayNight: boolean;
+  /** Ambient effects (clouds, birds, chimney smoke, fireworks). Missing = on. */
+  effects?: boolean;
 }
 
 /**

@@ -30,6 +30,7 @@
     "node_modules",
     "dist",
     "out",
-    "test/unit/cityRender.test.ts"
+    "test/unit/cityRender.test.ts",
+    "test/unit/cityFx.test.ts"
   ]
 }
