@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0
+
+### List view
+
+- New **City / List** switch in the toolbar. The list shows the same city as a tree: companies, their live and recent
+  sessions, the subagents of a session and an *Archived* group per company.
+- Rows open and close with the arrow next to them, a double click or the arrow keys (Right opens / steps in, Left closes /
+  goes to the parent, Up / Down / Home / End move, Enter shows the details). *Expand all* and *Collapse all* in the list bar.
+- Each company row shows what needs attention at a glance: waiting, working and failed sessions, live, recent and archived
+  counts, and the last activity. Sort by *needs attention first*, name or last activity.
+- Search, filters, selection and the details panel work exactly as on the map. The HUD's "needs your attention" button and
+  the activity feed open the right company and scroll to the session.
+- The ⌂ button on a company row (or *Enter building* in the details) switches back to the map and goes inside that building.
+- The chosen view, the open rows and the sort order are remembered.
+
 ## 0.2.0
 
 A smoother, livelier and much cheaper city.

@@ -2,7 +2,7 @@
   "name": "agent-city",
   "displayName": "Agent City - Workspace and Agent Session Manager",
   "description": "A living city visualization of your local Claude Code sessions and agents.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "TimoBeermann",
   "license": "MIT",
   "repository": {

@@ -1292,3 +1292,294 @@ body.vscode-reduce-motion .walker.is-walking .legs {
   width: 100%;
   flex: 0 0 auto;
 }
+
+/* ------------------------------------------------------------------ view switch (city / list) */
+.view-switch {
+  display: inline-flex;
+  border: 1px solid var(--cc-glass-border);
+  border-radius: 6px;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.view-switch-button {
+  border: 0;
+  background: transparent;
+  color: var(--cc-muted);
+  padding: 3px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.view-switch-button + .view-switch-button {
+  border-left: 1px solid var(--cc-glass-border);
+}
+.view-switch-button:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+.view-switch-button.is-on {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+.view-switch-button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -2px;
+}
+
+/* ------------------------------------------------------------------ list view (tree) */
+.list-view {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: var(--cc-radius);
+  border: 1px solid var(--cc-glass-border);
+  background: color-mix(in srgb, var(--cc-bg) 94%, var(--cc-neon) 3%);
+  overflow: hidden;
+}
+.lv-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 6px 10px;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+.lv-count {
+  font-weight: 600;
+  margin-right: auto;
+}
+.lv-bar .secondary-button {
+  flex: 0 0 auto;
+}
+.lv-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cc-muted);
+}
+.lv-sort select {
+  font: inherit;
+  color: var(--vscode-dropdown-foreground, var(--cc-fg));
+  background: var(--vscode-dropdown-background, var(--cc-bg));
+  border: 1px solid var(--vscode-dropdown-border, var(--cc-glass-border));
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.lv-tree {
+  flex: 1;
+  overflow: auto;
+  padding: 2px 6px 10px;
+}
+.lv-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  padding: 2px 8px 2px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  /* long lists: rows far outside the viewport are skipped by layout and paint */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 26px;
+}
+.lv-row:hover {
+  background: var(--vscode-list-hoverBackground, color-mix(in srgb, var(--cc-fg) 7%, transparent));
+}
+.lv-row.is-selected {
+  background: var(--vscode-list-activeSelectionBackground, color-mix(in srgb, var(--vscode-focusBorder) 24%, transparent));
+  color: var(--vscode-list-activeSelectionForeground, var(--cc-fg));
+}
+.lv-row:focus {
+  outline: none;
+}
+.lv-row:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.lv-level-2 {
+  padding-left: 26px;
+}
+.lv-level-3 {
+  padding-left: 48px;
+}
+.lv-row--workspace {
+  min-height: 30px;
+  font-weight: 600;
+}
+.lv-row--workspace + .lv-row--workspace,
+.lv-row:not(.lv-row--workspace) + .lv-row--workspace {
+  margin-top: 1px;
+}
+.lv-row--note {
+  cursor: default;
+  color: var(--cc-muted);
+  font-style: italic;
+}
+.lv-row--note:hover {
+  background: transparent;
+}
+.lv-twisty {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cc-muted);
+  font-size: 15px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: transform 0.12s ease-out;
+}
+.lv-twisty:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--cc-fg);
+}
+.lv-twisty.is-open {
+  transform: rotate(90deg);
+}
+.lv-twisty--none {
+  visibility: hidden;
+}
+.lv-house {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 12px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, var(--roof) 0 42%, var(--wall) 42% 100%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+.lv-house.is-quiet {
+  opacity: 0.45;
+}
+.lv-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 40px;
+  flex: 0 1 auto;
+}
+.lv-name--group {
+  color: var(--cc-muted);
+  font-weight: 600;
+}
+.lv-detail {
+  color: var(--cc-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.lv-meta {
+  margin-left: auto;
+  padding-left: 12px;
+  color: var(--cc-muted);
+  font-size: 0.9em;
+  font-weight: 400;
+  flex: 0 0 auto;
+}
+.lv-badges {
+  display: inline-flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.lv-badge {
+  border: 1px solid var(--cc-glass-border);
+  border-radius: 999px;
+  padding: 0 7px;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--cc-muted);
+  flex: 0 0 auto;
+}
+.lv-badge--waiting {
+  color: var(--cc-fg);
+  border-color: var(--cc-waiting);
+  background: color-mix(in srgb, var(--cc-waiting) 22%, transparent);
+}
+.lv-badge--working {
+  color: var(--cc-working);
+  border-color: color-mix(in srgb, var(--cc-working) 55%, transparent);
+}
+.lv-badge--failed {
+  color: var(--cc-failed);
+  border-color: color-mix(in srgb, var(--cc-failed) 55%, transparent);
+}
+.lv-badge--live {
+  color: var(--cc-fg);
+}
+.lv-tag {
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 0.85em;
+  font-weight: 400;
+  font-family: var(--cc-mono);
+  color: var(--cc-muted);
+  background: color-mix(in srgb, var(--cc-fg) 9%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 2 auto;
+  min-width: 0;
+}
+.lv-tag--warn {
+  color: var(--cc-waiting);
+  font-family: inherit;
+}
+.lv-glyph {
+  flex: 0 0 18px;
+  width: 18px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--cc-idle);
+}
+.lv-glyph--working,
+.lv-glyph--busy {
+  color: var(--cc-working);
+}
+.lv-glyph--waiting,
+.lv-glyph--blocked {
+  color: var(--cc-waiting);
+}
+.lv-glyph--done {
+  color: var(--cc-done);
+}
+.lv-glyph--failed {
+  color: var(--cc-failed);
+}
+.lv-glyph--stopped,
+.lv-glyph--archived,
+.lv-glyph--resting {
+  color: var(--cc-stopped);
+}
+.lv-row .lv-enter {
+  flex: 0 0 auto;
+  opacity: 0;
+  min-width: 22px;
+  padding: 0 4px;
+}
+.lv-row:hover .lv-enter,
+.lv-row:focus-visible .lv-enter,
+.lv-row.is-selected .lv-enter,
+.lv-enter:focus-visible {
+  opacity: 1;
+}
+.lv-note {
+  padding-left: 24px;
+}
+.list-view > .city-empty {
+  flex: 1;
+}
+body.vscode-high-contrast .lv-row.is-selected,
+body.vscode-high-contrast-light .lv-row.is-selected {
+  outline: 1px solid var(--vscode-contrastActiveBorder);
+  outline-offset: -1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lv-twisty {
+    transition: none;
+  }
+}
+body.vscode-reduce-motion .lv-twisty {
+  transition: none;
+}

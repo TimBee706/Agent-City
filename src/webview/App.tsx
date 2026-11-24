@@ -11,6 +11,8 @@ import { EventFeed } from './EventFeed';
 import { CityFilters, DEFAULT_FILTERS, applyFilters } from './filters';
 import { SPARKLE_MS, announcementFor, combineAnnouncements, dayPeriod, sparkleTargets } from './highlights';
 import { Hud } from './Hud';
+import { ListView } from './ListView';
+import type { ListSort, ViewMode } from './listModel';
 import { CITY_NAV, NavState } from './navigation';
 import { SelectOptions, Selection } from './selection';
 import { Sidebar } from './Sidebar';
@@ -89,6 +91,9 @@ export function App({ view }: { view: ViewKind }) {
   const [fitRequest, setFitRequest] = useState(0);
   const [attentionRequest, setAttentionRequest] = useState(0);
   const [nav, setNav] = useState<NavState>(initial.nav ?? CITY_NAV);
+  const [viewMode, setViewMode] = useState<ViewMode>(initial.view ?? 'city');
+  const [listExpanded, setListExpanded] = useState<string[]>(initial.listExpanded ?? []);
+  const [listSort, setListSort] = useState<ListSort>(initial.listSort ?? 'attention');
   const [panelAutoFocus, setPanelAutoFocus] = useState(true);
   const [announcement, announce] = useAnnouncer();
   const now = useNow(15_000);
@@ -116,8 +121,9 @@ export function App({ view }: { view: ViewKind }) {
         return;
       }
       if (msg.type === 'focusAttention') {
-        // the taxi lives on the city level
+        // the taxi lives on the city level of the map
         setNav(CITY_NAV);
+        setViewMode('city');
         setAttentionRequest((n) => n + 1);
         return;
       }
@@ -178,11 +184,36 @@ export function App({ view }: { view: ViewKind }) {
   // ------------------------------------------------------------------ levels: city <-> building
   const navRef = useRef(nav);
   navRef.current = nav;
+  const viewRef = useRef(viewMode);
+  viewRef.current = viewMode;
+  const onViewChange = useCallback(
+    (view: ViewMode) => {
+      setViewMode(view);
+      persist({ view });
+    },
+    [persist],
+  );
+  const onListExpanded = useCallback(
+    (keys: string[]) => {
+      setListExpanded(keys);
+      persist({ listExpanded: keys });
+    },
+    [persist],
+  );
+  const onListSort = useCallback(
+    (sort: ListSort) => {
+      setListSort(sort);
+      persist({ listSort: sort });
+    },
+    [persist],
+  );
   const openBuilding = useCallback(
     (workspaceId: string) => {
       const next: NavState = { level: 'building', workspaceId };
       setNav(next);
-      persist({ nav: next });
+      // buildings are part of the map: entering one from the list switches back to it
+      setViewMode('city');
+      persist({ nav: next, view: 'city' });
     },
     [persist],
   );
@@ -207,13 +238,13 @@ export function App({ view }: { view: ViewKind }) {
         if (selectionRef.current) {
           e.preventDefault();
           onSelect(undefined);
-        } else if (navRef.current.level === 'building') {
+        } else if (navRef.current.level === 'building' && viewRef.current === 'city') {
           e.preventDefault();
           backToCity();
         }
         return;
       }
-      if (e.key === 'Backspace' && !typing && navRef.current.level === 'building') {
+      if (e.key === 'Backspace' && !typing && navRef.current.level === 'building' && viewRef.current === 'city') {
         e.preventDefault();
         backToCity();
       }
@@ -243,7 +274,7 @@ export function App({ view }: { view: ViewKind }) {
     (id: string) => {
       const ws = stateRef.current.workspaces.find((w) => w.sessionIds.includes(id));
       const cur = navRef.current;
-      if (cur.level === 'building' && ws && ws.id !== cur.workspaceId) openBuilding(ws.id);
+      if (viewRef.current === 'city' && cur.level === 'building' && ws && ws.id !== cur.workspaceId) openBuilding(ws.id);
       setFocusRequest({ kind: 'session', id, nonce: ++nonce.current });
     },
     [openBuilding],
@@ -258,7 +289,7 @@ export function App({ view }: { view: ViewKind }) {
   const focusWorkspace = useCallback(
     (id: string) => {
       onSelect({ kind: 'workspace', id });
-      if (navRef.current.level === 'building' && navRef.current.workspaceId !== id) openBuilding(id);
+      if (viewRef.current === 'city' && navRef.current.level === 'building' && navRef.current.workspaceId !== id) openBuilding(id);
       setFocusRequest({ kind: 'workspace', id, nonce: ++nonce.current });
     },
     [onSelect, openBuilding],
@@ -393,6 +424,8 @@ export function App({ view }: { view: ViewKind }) {
         active={filtered.active}
         hiddenWorkspaces={filtered.hiddenWorkspaces}
         hiddenSessions={filtered.hiddenSessions}
+        view={viewMode}
+        onViewChange={onViewChange}
       />
       <div className="layout">
         <div className="map-area">
@@ -404,7 +437,7 @@ export function App({ view }: { view: ViewKind }) {
           selection={selection}
           onSelect={onSelect}
           onOpen={openBuilding}
-          active={nav.level === 'city'}
+          active={nav.level === 'city' && viewMode === 'city'}
           initialTransform={initial.zoom}
           onTransformChange={onTransformChange}
           focusRequest={focusRequest}
@@ -415,7 +448,26 @@ export function App({ view }: { view: ViewKind }) {
           sparkles={sparkles}
           effects={state.config?.effects !== false}
         />
-        {nav.level === 'building' &&
+        {viewMode === 'list' && (
+          <ListView
+            workspaces={filtered.workspaces}
+            sessions={filtered.sessions}
+            agents={filtered.agents}
+            historyIndex={state.historyIndex}
+            selection={selection}
+            onSelect={onSelect}
+            onOpenBuilding={openBuilding}
+            expanded={listExpanded}
+            onExpandedChange={onListExpanded}
+            sort={listSort}
+            onSortChange={onListSort}
+            focusRequest={focusRequest}
+            now={now}
+            empty={emptyContent}
+          />
+        )}
+        {viewMode === 'city' &&
+          nav.level === 'building' &&
           (buildingWs ? (
             <BuildingView
               key={buildingWs.id}
@@ -449,7 +501,7 @@ export function App({ view }: { view: ViewKind }) {
             onSelect={onSelect}
             now={now}
             autoFocus={panelAutoFocus}
-            currentBuilding={nav.level === 'building' ? nav.workspaceId : undefined}
+            currentBuilding={viewMode === 'city' && nav.level === 'building' ? nav.workspaceId : undefined}
             onOpenBuilding={openBuilding}
             onBackToCity={backToCity}
           />
